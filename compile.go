@@ -3,16 +3,18 @@ package main
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
 type Compiler struct {
 	w    io.Writer
 	temp Temporary
+	vars map[string]Variable
 }
 
 func NewCompiler(w io.Writer) *Compiler {
-	return &Compiler{w: w}
+	return &Compiler{w: w, vars: make(map[string]Variable)}
 }
 
 func (c *Compiler) Writef(format string, args ...interface{}) {
@@ -73,6 +75,37 @@ func (c *Compiler) Temporary() Temporary {
 	return c.temp
 }
 
+func (c *Compiler) NewVariable(name string, typ ConcreteType) Variable {
+	if _, ok := c.vars[name]; ok {
+		panic("Variable already exists")
+	}
+	v := Variable{c.Temporary(), typ}
+	c.vars[name] = v
+
+	m := typ.Metrics()
+	op := ""
+	switch {
+	case m.Align <= 4:
+		op = "alloc4"
+	case m.Align <= 8:
+		op = "alloc8"
+	case m.Align <= 16:
+		op = "alloc16"
+	default:
+		panic("Invalid alignment")
+	}
+	c.Insn(v.Loc, 'l', op, IRInt(m.Size))
+
+	return v
+}
+func (c *Compiler) Variable(name string) Variable {
+	v, ok := c.vars[name]
+	if !ok {
+		panic("Undefined variable")
+	}
+	return v
+}
+
 type Operand interface {
 	Operand() string
 }
@@ -91,6 +124,14 @@ func (t Temporary) String() string {
 
 type IRInteger string
 
+func IRInt(i int) IRInteger {
+	return IRInteger(strconv.Itoa(i))
+}
 func (i IRInteger) Operand() string {
 	return string(i)
+}
+
+type Variable struct {
+	Loc  Temporary // Stores address on stack
+	Type ConcreteType
 }

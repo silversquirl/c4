@@ -41,16 +41,28 @@ func (f Function) GenIR(c *Compiler) {
 }
 
 type Statement interface {
-	StmtCode() string
+	Code() string
 	GenIR(c *Compiler)
+}
+
+type DeclStmt struct {
+	Name string
+	Type ConcreteType
+}
+
+func (d DeclStmt) Code() string {
+	return "var " + d.Name + " " + d.Type.Code()
+}
+func (d DeclStmt) GenIR(c *Compiler) {
+	c.NewVariable(d.Name, d.Type)
 }
 
 type ReturnStmt struct {
 	Value Expression
 }
 
-func (r ReturnStmt) StmtCode() string {
-	return "return " + r.Value.ExprCode()
+func (r ReturnStmt) Code() string {
+	return "return " + r.Value.Code()
 }
 func (r ReturnStmt) GenIR(c *Compiler) {
 	v := r.Value.GenIR(c)
@@ -59,17 +71,68 @@ func (r ReturnStmt) GenIR(c *Compiler) {
 
 type ExprStmt struct{ Expression }
 
-func (e ExprStmt) StmtCode() string {
-	return e.ExprCode()
-}
 func (e ExprStmt) GenIR(c *Compiler) {
-	e.GenIR(c)
+	e.Expression.GenIR(c)
 }
 
 type Expression interface {
-	TypeOf() Type
-	ExprCode() string
+	TypeOf(c *Compiler) Type
+	Code() string
 	GenIR(c *Compiler) Operand
+}
+
+type AssignExpr struct {
+	L LValue
+	R Expression
+}
+
+type LValue interface {
+	Expression
+	PtrTo(c *Compiler) Operand
+}
+
+func (e AssignExpr) TypeOf(c *Compiler) Type {
+	ltyp, ok := e.L.TypeOf(c).(ConcreteType)
+	if !ok {
+		panic("Lvalue of non-concrete type")
+	}
+	rtyp := e.R.TypeOf(c)
+	if !Compatible(ltyp, rtyp) {
+		panic("Operands of assignment are incompatible")
+	}
+	return ltyp
+}
+
+func (e AssignExpr) Code() string {
+	return e.L.Code() + " = " + e.R.Code()
+}
+
+func (e AssignExpr) GenIR(c *Compiler) Operand {
+	t := e.TypeOf(c).(ConcreteType)
+	l := e.L.PtrTo(c)
+	r := e.R.GenIR(c)
+	// TODO: make extensible
+	c.Insn(0, 0, "store"+t.IRTypeName(), r, l)
+	return l
+}
+
+type VarExpr string
+
+func (e VarExpr) TypeOf(c *Compiler) Type {
+	return c.Variable(string(e)).Type
+}
+func (e VarExpr) Code() string {
+	return string(e)
+}
+func (e VarExpr) GenIR(c *Compiler) Operand {
+	v := c.Variable(string(e))
+	t := c.Temporary()
+	// TODO: make extensible
+	c.Insn(t, v.Type.IRBaseTypeName(), "load"+v.Type.IRTypeName(), v.Loc)
+	return t
+}
+func (e VarExpr) PtrTo(c *Compiler) Operand {
+	return c.Variable(string(e)).Loc
 }
 
 type BinaryExpr struct {
@@ -77,9 +140,9 @@ type BinaryExpr struct {
 	L, R Expression
 }
 
-func (e BinaryExpr) TypeOf() Type {
-	ltyp := e.L.TypeOf()
-	rtyp := e.R.TypeOf()
+func (e BinaryExpr) TypeOf(c *Compiler) Type {
+	ltyp := e.L.TypeOf(c)
+	rtyp := e.R.TypeOf(c)
 	if !Compatible(ltyp, rtyp) {
 		panic("Operands of binary expression are incompatible")
 	}
@@ -94,13 +157,13 @@ func (e BinaryExpr) TypeOf() Type {
 	return typ
 }
 
-func (e BinaryExpr) ExprCode() string {
+func (e BinaryExpr) Code() string {
 	// TODO: smarter spacing/parenthesizing
-	return fmt.Sprintf("(%s %s %s)", e.L.ExprCode(), e.Op.Operator(), e.R.ExprCode())
+	return fmt.Sprintf("(%s %s %s)", e.L.Code(), e.Op.Operator(), e.R.Code())
 }
 
 func (e BinaryExpr) GenIR(c *Compiler) Operand {
-	t := e.TypeOf().(NumericType)
+	t := e.TypeOf(c).(NumericType)
 	l := e.L.GenIR(c)
 	r := e.R.GenIR(c)
 	v := c.Temporary()
@@ -152,10 +215,10 @@ const (
 
 type IntegerExpr string
 
-func (_ IntegerExpr) TypeOf() Type {
+func (_ IntegerExpr) TypeOf(c *Compiler) Type {
 	return NumberType{}
 }
-func (e IntegerExpr) ExprCode() string {
+func (e IntegerExpr) Code() string {
 	return string(e)
 }
 func (e IntegerExpr) GenIR(c *Compiler) Operand {

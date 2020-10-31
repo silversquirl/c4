@@ -27,14 +27,19 @@ type Type interface {
 
 type ConcreteType interface {
 	Type
+	Metrics() TypeMetrics
 	// Source code representing the type
-	TypeCode() string
+	Code() string
 	// The QBE name of the base, extended or aggregate type corresponding to this type
 	IRTypeName() string
 	// The QBE name of the base type closest to this type, if any
 	IRBaseTypeName() rune
 	// QBE code to declare the type, if any
 	IRTypeDecl() string
+}
+
+type TypeMetrics struct {
+	Size, Align int
 }
 
 type NumericType interface {
@@ -98,7 +103,25 @@ func (t PrimitiveType) Concrete() ConcreteType {
 	return t
 }
 
-func (p PrimitiveType) TypeCode() string {
+func (p PrimitiveType) Metrics() TypeMetrics {
+	switch p {
+	case TypeI64, TypeU64:
+		return TypeMetrics{8, 8}
+	case TypeI32, TypeU32:
+		return TypeMetrics{4, 4}
+	case TypeI16, TypeU16:
+		return TypeMetrics{2, 2}
+	case TypeI8, TypeU8, TypeBool:
+		return TypeMetrics{1, 1}
+	case TypeF64:
+		return TypeMetrics{8, 8}
+	case TypeF32:
+		return TypeMetrics{4, 4}
+	}
+	panic("Invalid primitive type")
+}
+
+func (p PrimitiveType) Code() string {
 	switch p {
 	case TypeI64:
 		return "I64"
@@ -186,6 +209,10 @@ type PointerType struct {
 	To ConcreteType
 }
 
+func PointerTo(to ConcreteType) PointerType {
+	return PointerType{To: to}
+}
+
 func (a PointerType) Equals(other Type) bool {
 	b, ok := other.(PointerType)
 	return ok && a.To.Equals(b.To)
@@ -199,8 +226,11 @@ func (_ PointerType) IsConcrete() bool {
 func (p PointerType) Concrete() ConcreteType {
 	return p
 }
-func (p PointerType) TypeCode() string {
-	return "*" + p.To.TypeCode()
+func (_ PointerType) Metrics() TypeMetrics {
+	return TypeMetrics{8, 8}
+}
+func (p PointerType) Code() string {
+	return "*" + p.To.Code()
 }
 func (_ PointerType) IRTypeName() string {
 	return "w"
