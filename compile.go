@@ -37,6 +37,37 @@ func (c *Compiler) Insn(retVar Temporary, retType rune, opcode string, operands 
 	}
 }
 
+func (c *Compiler) StartFunction(export bool, name string, params []IRParam, retType string) {
+	prefix := ""
+	if export {
+		prefix = "export "
+	}
+
+	pbuild := &strings.Builder{}
+	for i, param := range params {
+		if i > 0 {
+			pbuild.WriteString(", ")
+		}
+		pbuild.WriteString(param.Type)
+		pbuild.WriteRune(' ')
+		pbuild.WriteString(param.Name)
+	}
+
+	c.Writef("%sfunction %s $%s(%s) {\n@start\n", prefix, retType, name, pbuild)
+}
+
+func (c *Compiler) EndFunction() {
+	c.Writef("}\n")
+
+	// Reset temporaries
+	c.temp = 0
+}
+
+type IRParam struct {
+	Name string
+	Type string
+}
+
 func (c *Compiler) Temporary() Temporary {
 	c.temp++
 	return c.temp

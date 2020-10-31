@@ -26,18 +26,18 @@ type VarDecl struct {
 }
 
 func (f Function) GenIR(c *Compiler) {
-	if f.Export {
-		c.Writef("export ")
+	params := make([]IRParam, len(f.Params))
+	for i, param := range f.Params {
+		params[i].Name = param.Name
+		params[i].Type = param.Type.IRTypeName()
 	}
-	c.Writef("function %s $%s(", f.Return.IRTypeName(), f.Name)
-	for _, param := range f.Params {
-		c.Writef("%s %s", param.Type.IRTypeName(), param.Name)
-	}
-	c.Writef(") {\n@start\n")
+
+	c.StartFunction(f.Export, f.Name, params, f.Return.IRTypeName())
+	defer c.EndFunction()
+
 	for _, stmt := range f.Code {
 		stmt.GenIR(c)
 	}
-	c.Writef("}\n")
 }
 
 type Statement interface {
