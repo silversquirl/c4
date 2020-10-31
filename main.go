@@ -4,7 +4,8 @@ import "os"
 
 func main() {
 	prog := Program{
-		{true, "main", TypeI32, nil, []Statement{
+		VarDecl{"global", TypeI64},
+		Function{true, "main", TypeI32, nil, []Statement{
 			/*
 				// return 0
 				ReturnStmt{IntegerExpr("0")},
@@ -31,12 +32,14 @@ func main() {
 			// var j I64
 			// i = 7
 			// j = 5
-			// return i + j
-			DeclStmt{"i", TypeI64},
-			DeclStmt{"j", TypeI64},
+			// i = i + j
+			// return i + global
+			VarDecl{"i", TypeI64},
+			VarDecl{"j", TypeI64},
 			ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
 			ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
-			ReturnStmt{BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}},
+			ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
+			ReturnStmt{BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("global")}},
 			// */
 		}},
 	}

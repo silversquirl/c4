@@ -4,12 +4,16 @@ import (
 	"fmt"
 )
 
-type Program []Function
+type Program []Toplevel
 
 func (p Program) GenIR(c *Compiler) {
 	for _, f := range p {
-		f.GenIR(c)
+		f.ToplevelIR(c)
 	}
+}
+
+type Toplevel interface {
+	ToplevelIR(c *Compiler)
 }
 
 type Function struct {
@@ -20,12 +24,7 @@ type Function struct {
 	Code   []Statement
 }
 
-type VarDecl struct {
-	Name string
-	Type ConcreteType
-}
-
-func (f Function) GenIR(c *Compiler) {
+func (f Function) ToplevelIR(c *Compiler) {
 	params := make([]IRParam, len(f.Params))
 	for i, param := range f.Params {
 		params[i].Name = param.Name
@@ -45,16 +44,19 @@ type Statement interface {
 	GenIR(c *Compiler)
 }
 
-type DeclStmt struct {
+type VarDecl struct {
 	Name string
 	Type ConcreteType
 }
 
-func (d DeclStmt) Code() string {
+func (d VarDecl) Code() string {
 	return "var " + d.Name + " " + d.Type.Code()
 }
-func (d DeclStmt) GenIR(c *Compiler) {
-	c.NewVariable(d.Name, d.Type)
+func (d VarDecl) GenIR(c *Compiler) {
+	c.DeclareLocal(d.Name, d.Type)
+}
+func (d VarDecl) ToplevelIR(c *Compiler) {
+	c.DeclareGlobal(d.Name, d.Type)
 }
 
 type ReturnStmt struct {

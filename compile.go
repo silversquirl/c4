@@ -75,11 +75,20 @@ func (c *Compiler) Temporary() Temporary {
 	return c.temp
 }
 
-func (c *Compiler) NewVariable(name string, typ ConcreteType) Variable {
+func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {
 	if _, ok := c.vars[name]; ok {
 		panic("Variable already exists")
 	}
-	v := Variable{c.Temporary(), typ}
+	v := Variable{Global(name), typ}
+	c.vars[name] = v
+	return v
+}
+func (c *Compiler) DeclareLocal(name string, typ ConcreteType) Variable {
+	if _, ok := c.vars[name]; ok {
+		panic("Variable already exists")
+	}
+	loc := c.Temporary()
+	v := Variable{loc, typ}
 	c.vars[name] = v
 
 	m := typ.Metrics()
@@ -94,7 +103,7 @@ func (c *Compiler) NewVariable(name string, typ ConcreteType) Variable {
 	default:
 		panic("Invalid alignment")
 	}
-	c.Insn(v.Loc, 'l', op, IRInt(m.Size))
+	c.Insn(loc, 'l', op, IRInt(m.Size))
 
 	return v
 }
@@ -122,6 +131,12 @@ func (t Temporary) String() string {
 	return t.Operand()
 }
 
+type Global string
+
+func (g Global) Operand() string {
+	return "$" + string(g)
+}
+
 type IRInteger string
 
 func IRInt(i int) IRInteger {
@@ -132,6 +147,6 @@ func (i IRInteger) Operand() string {
 }
 
 type Variable struct {
-	Loc  Temporary // Stores address on stack
+	Loc  Operand
 	Type ConcreteType
 }
