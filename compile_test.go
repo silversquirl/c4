@@ -206,6 +206,24 @@ func TestReferenceVariable(t *testing.T) {
 	`)
 }
 
+func TestDereferencePointer(t *testing.T) {
+	/*
+		fn main() I32 {
+			var p [I32]
+			return [p]
+		}
+	*/
+	testMainCompile(t, []Statement{
+		VarDecl{"p", PointerTo(TypeI32)},
+		ReturnStmt{DerefExpr{VarExpr("p")}},
+	}, `
+		%t1 =l alloc8 8
+		%t2 =l loadl %t1
+		%t3 =w loadw %t2
+		ret %t3
+	`)
+}
+
 func TestFunctionCall(t *testing.T) {
 	/*
 		extern printi fn(I64)

@@ -90,11 +90,6 @@ type AssignExpr struct {
 	R Expression
 }
 
-type LValue interface {
-	Expression
-	PtrTo(c *Compiler) Operand
-}
-
 func (e AssignExpr) TypeOf(c *Compiler) Type {
 	ltyp, ok := e.L.TypeOf(c).(ConcreteType)
 	if !ok {
@@ -171,6 +166,25 @@ func (e CallExpr) GenIR(c *Compiler) Operand {
 	}
 }
 
+type LValue interface {
+	Expression
+	PtrTo(c *Compiler) Operand
+}
+
+func genLValueIR(lv LValue, c *Compiler) Operand {
+	ty := lv.TypeOf(c).(ConcreteType)
+	switch ty.(type) {
+	case PrimitiveType, PointerType:
+	default:
+		panic("Attempted load of non-primitive type")
+	}
+
+	ptr := lv.PtrTo(c)
+	tmp := c.Temporary()
+	c.Insn(tmp, ty.IRBaseTypeName(), "load"+ty.IRTypeName(), ptr)
+	return tmp
+}
+
 type VarExpr string
 
 func (e VarExpr) TypeOf(c *Compiler) Type {
@@ -180,11 +194,7 @@ func (e VarExpr) Code() string {
 	return string(e)
 }
 func (e VarExpr) GenIR(c *Compiler) Operand {
-	v := c.Variable(string(e))
-	t := c.Temporary()
-	// TODO: make extensible
-	c.Insn(t, v.Type.IRBaseTypeName(), "load"+v.Type.IRTypeName(), v.Loc)
-	return t
+	return genLValueIR(e, c)
 }
 func (e VarExpr) PtrTo(c *Compiler) Operand {
 	return c.Variable(string(e)).Loc
@@ -200,6 +210,25 @@ func (e RefExpr) Code() string {
 }
 func (e RefExpr) GenIR(c *Compiler) Operand {
 	return e.V.PtrTo(c)
+}
+
+type DerefExpr struct{ V Expression }
+
+func (e DerefExpr) TypeOf(c *Compiler) Type {
+	if t, ok := e.V.TypeOf(c).(PointerType); ok {
+		return t.To
+	} else {
+		panic("Dereference of non-pointer type")
+	}
+}
+func (e DerefExpr) Code() string {
+	return "[" + e.V.Code() + "]"
+}
+func (e DerefExpr) GenIR(c *Compiler) Operand {
+	return genLValueIR(e, c)
+}
+func (e DerefExpr) PtrTo(c *Compiler) Operand {
+	return e.V.GenIR(c)
 }
 
 type BinaryExpr struct {
