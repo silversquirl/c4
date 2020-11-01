@@ -195,6 +195,8 @@ type BinaryExpr struct {
 	L, R Expression
 }
 
+// FIXME: all operators other than add, sub, div and mul require integer types
+// FIXME: lsh and rsh require their second argument to be an I32 or smaller
 func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
@@ -238,6 +240,19 @@ func (op BinaryOperator) Operator() string {
 		return "*"
 	case BOpDiv:
 		return "/"
+	case BOpMod:
+		return "%"
+
+	case BOpOr:
+		return "|"
+	case BOpXor:
+		return "^"
+	case BOpAnd:
+		return "&"
+	case BOpShl:
+		return "<<"
+	case BOpShr:
+		return ">>"
 	}
 	panic("Invalid binary operator")
 }
@@ -256,6 +271,27 @@ func (op BinaryOperator) Instruction(typ NumericType) string {
 		} else {
 			return "udiv"
 		}
+	case BOpMod:
+		if typ.Signed() {
+			return "rem"
+		} else {
+			return "urem"
+		}
+
+	case BOpOr:
+		return "or"
+	case BOpXor:
+		return "xor"
+	case BOpAnd:
+		return "and"
+	case BOpShl:
+		return "shl"
+	case BOpShr:
+		if typ.Signed() {
+			return "sar"
+		} else {
+			return "shr"
+		}
 	}
 	panic("Invalid binary operator")
 }
@@ -265,7 +301,13 @@ const (
 	BOpSub
 	BOpMul
 	BOpDiv
-	// TODO: more
+	BOpMod
+
+	BOpOr
+	BOpXor
+	BOpAnd
+	BOpShl
+	BOpShr
 )
 
 type IntegerExpr string

@@ -67,6 +67,7 @@ func TestReturn0(t *testing.T) {
 	testMainCompile(t, []Statement{ReturnStmt{IntegerExpr("0")}}, `ret 0`)
 }
 
+// TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
 	/*
 		fn main() I32 {
@@ -74,6 +75,14 @@ func TestArithmetic(t *testing.T) {
 			4 - 2
 			4 * 2
 			4 / 2
+			4 % 2
+
+			4 | 2
+			4 ^ 2
+			4 & 2
+			4 << 2
+			4 >> 2
+
 			return 0
 		}
 	*/
@@ -82,13 +91,25 @@ func TestArithmetic(t *testing.T) {
 	}
 	testMainCompile(t, []Statement{
 		bin(BOpAdd), bin(BOpSub),
-		bin(BOpMul), bin(BOpDiv),
+		bin(BOpMul), bin(BOpDiv), bin(BOpMod),
+
+		bin(BOpOr), bin(BOpXor), bin(BOpAnd),
+		bin(BOpShl), bin(BOpShr),
+
 		ReturnStmt{IntegerExpr("0")},
 	}, `
 		%t1 =l add 4, 2
 		%t2 =l sub 4, 2
 		%t3 =l mul 4, 2
 		%t4 =l div 4, 2
+		%t5 =l rem 4, 2
+
+		%t6  =l or  4, 2
+		%t7  =l xor 4, 2
+		%t8  =l and 4, 2
+		%t9  =l shl 4, 2
+		%t10 =l sar 4, 2
+
 		ret 0
 	`)
 }
