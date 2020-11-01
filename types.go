@@ -236,10 +236,10 @@ func (p PointerType) Code() string {
 	return "*" + p.To.Code()
 }
 func (_ PointerType) IRTypeName() string {
-	return "w"
+	return "l"
 }
 func (_ PointerType) IRBaseTypeName() rune {
-	return 'w'
+	return 'l'
 }
 func (_ PointerType) IRTypeDecl() string {
 	return ""
