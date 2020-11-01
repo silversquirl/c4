@@ -172,16 +172,24 @@ type LValue interface {
 }
 
 func genLValueIR(lv LValue, c *Compiler) Operand {
-	ty := lv.TypeOf(c).(ConcreteType)
-	switch ty.(type) {
-	case PrimitiveType, PointerType:
-	default:
-		panic("Attempted load of non-primitive type")
+	ty, ok := lv.TypeOf(c).(NumericType)
+	if !ok {
+		panic("Attempted load of non-numeric type")
 	}
 
 	ptr := lv.PtrTo(c)
+	op := "load"
+	if ty.IRTypeName() != string(ty.IRBaseTypeName()) {
+		if ty.(NumericType).Signed() {
+			op += "s"
+		} else {
+			op += "u"
+		}
+	}
+	op += ty.IRTypeName()
+
 	tmp := c.Temporary()
-	c.Insn(tmp, ty.IRBaseTypeName(), "load"+ty.IRTypeName(), ptr)
+	c.Insn(tmp, ty.IRBaseTypeName(), op, ptr)
 	return tmp
 }
 

@@ -139,8 +139,7 @@ func TestVariables(t *testing.T) {
 	/*
 		extern global I32
 		pub fn main() I32 {
-			var i I32
-			var j I32
+			var i, j I32
 			i = 7
 			j = 5
 			i = i + j
@@ -175,6 +174,54 @@ func TestVariables(t *testing.T) {
 			%t8 =w add %t6, %t7
 			ret %t8
 		}
+	`)
+}
+
+func TestSmallTypes(t *testing.T) {
+	/*
+		var i, j I16
+		i = 7
+		j = 5
+		i = i + j
+
+		var k, l I8
+		k = 7
+		l = 5
+		k = k + l
+	*/
+	testMainCompile(t, []Statement{
+		VarDecl{"i", TypeI16},
+		VarDecl{"j", TypeI16},
+		ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
+		ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
+		ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
+
+		VarDecl{"k", TypeU8},
+		VarDecl{"l", TypeU8},
+		ExprStmt{AssignExpr{VarExpr("k"), IntegerExpr("7")}},
+		ExprStmt{AssignExpr{VarExpr("l"), IntegerExpr("5")}},
+		ExprStmt{AssignExpr{VarExpr("k"), BinaryExpr{BOpAdd, VarExpr("k"), VarExpr("l")}}},
+	}, `
+		%t1 =l alloc4 2
+		%t2 =l alloc4 2
+		storeh 7, %t1
+		storeh 5, %t2
+
+		%t3 =w loadsh %t1
+		%t4 =w loadsh %t2
+		%t5 =w add %t3, %t4
+		storeh %t5, %t1
+
+
+		%t6 =l alloc4 1
+		%t7 =l alloc4 1
+		storeb 7, %t6
+		storeb 5, %t7
+
+		%t8 =w loadub %t6
+		%t9 =w loadub %t7
+		%t10 =w add %t8, %t9
+		storeb %t10, %t6
 	`)
 }
 
