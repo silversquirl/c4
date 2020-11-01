@@ -60,9 +60,7 @@ func testMainCompile(t *testing.T, stmts []Statement, ir string) {
 
 func TestReturn0(t *testing.T) {
 	/*
-		fn main() I32 {
-			return 0
-		}
+		return 0
 	*/
 	testMainCompile(t, []Statement{ReturnStmt{IntegerExpr("0")}}, `ret 0`)
 }
@@ -70,21 +68,19 @@ func TestReturn0(t *testing.T) {
 // TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
 	/*
-		fn main() I32 {
-			4 + 2
-			4 - 2
-			4 * 2
-			4 / 2
-			4 % 2
+		4 + 2
+		4 - 2
+		4 * 2
+		4 / 2
+		4 % 2
 
-			4 | 2
-			4 ^ 2
-			4 & 2
-			4 << 2
-			4 >> 2
+		4 | 2
+		4 ^ 2
+		4 & 2
+		4 << 2
+		4 >> 2
 
-			return 0
-		}
+		return 0
 	*/
 	bin := func(op BinaryOperator) Statement {
 		return ExprStmt{BinaryExpr{op, IntegerExpr("4"), IntegerExpr("2")}}
@@ -116,9 +112,7 @@ func TestArithmetic(t *testing.T) {
 
 func TestNestedArithmetic(t *testing.T) {
 	/*
-		fn main() I32 {
-			return (1 + 10*2) * 2
-		}
+		return (1 + 10*2) * 2
 	*/
 	testMainCompile(t, []Statement{
 		ReturnStmt{
@@ -144,7 +138,7 @@ func TestNestedArithmetic(t *testing.T) {
 func TestVariables(t *testing.T) {
 	/*
 		extern global I32
-		fn main() I32 {
+		pub fn main() I32 {
 			var i I32
 			var j I32
 			i = 7
@@ -186,12 +180,10 @@ func TestVariables(t *testing.T) {
 
 func TestReferenceVariable(t *testing.T) {
 	/*
-		fn main() I32 {
-			var i I32
-			var j [I32]
-			j = &i
-			return 0
-		}
+		var i I32
+		var p [I32]
+		p = &i
+		return 0
 	*/
 	testMainCompile(t, []Statement{
 		VarDecl{"i", TypeI32},
@@ -208,10 +200,8 @@ func TestReferenceVariable(t *testing.T) {
 
 func TestDereferencePointer(t *testing.T) {
 	/*
-		fn main() I32 {
-			var p [I32]
-			return [p]
-		}
+		var p [I32]
+		return [p]
 	*/
 	testMainCompile(t, []Statement{
 		VarDecl{"p", PointerTo(TypeI32)},
@@ -227,7 +217,7 @@ func TestDereferencePointer(t *testing.T) {
 func TestFunctionCall(t *testing.T) {
 	/*
 		extern printi fn(I64)
-		fn main() I32 {
+		pub fn main() I32 {
 			printi(42)
 			return 0
 		}
@@ -250,7 +240,7 @@ func TestFunctionCall(t *testing.T) {
 func TestStringLiteral(t *testing.T) {
 	/*
 		extern puts fn([I8]) I32
-		fn main() I32 {
+		pub fn main() I32 {
 			puts("str0")
 			puts("str0")
 			puts("str1")
