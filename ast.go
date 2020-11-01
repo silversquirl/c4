@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 type Program []Toplevel
@@ -155,6 +156,7 @@ func (e CallExpr) GenIR(c *Compiler) Operand {
 
 	call := CallOperand{f, make([]TypedOperand, len(e.Args))}
 	for i, arg := range e.Args {
+		// TODO: type-check arguments
 		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName()
 		call.Args[i].Op = arg.GenIR(c)
 	}
@@ -276,4 +278,38 @@ func (e IntegerExpr) Code() string {
 }
 func (e IntegerExpr) GenIR(c *Compiler) Operand {
 	return IRInteger(e)
+}
+
+type StringExpr string
+
+func (_ StringExpr) TypeOf(c *Compiler) Type {
+	// TODO: immutable types
+	return PointerTo(TypeI8)
+}
+func (e StringExpr) Code() string {
+	b := &strings.Builder{}
+	b.WriteRune('"')
+	str := []byte(e)
+	for len(str) > 0 {
+		r, size := utf8.DecodeRune(str)
+		if r == utf8.RuneError {
+			fmt.Fprintf(b, `\x%02x`, str[0])
+		} else if r == '"' {
+			b.WriteString(`\"`)
+		} else if ' ' <= r && r <= '~' { // Printable ASCII range
+			b.WriteRune(r)
+		} else if r <= 0x7F {
+			fmt.Fprintf(b, `\x%02x`, r)
+		} else if r <= 0xFFFF {
+			fmt.Fprintf(b, `\u%04x`, r)
+		} else {
+			fmt.Fprintf(b, `\U%08x`, r)
+		}
+		str = str[size:]
+	}
+	b.WriteRune('"')
+	return b.String()
+}
+func (e StringExpr) GenIR(c *Compiler) Operand {
+	return c.String(string(e))
 }

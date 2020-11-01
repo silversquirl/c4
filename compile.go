@@ -11,10 +11,20 @@ type Compiler struct {
 	w    io.Writer
 	temp Temporary
 	vars map[string]Variable
+	strs map[IRString]Global
 }
 
 func NewCompiler(w io.Writer) *Compiler {
-	return &Compiler{w: w, vars: make(map[string]Variable)}
+	return &Compiler{
+		w, 0,
+		make(map[string]Variable),
+		make(map[IRString]Global),
+	}
+}
+
+func (c *Compiler) Compile(prog Program) {
+	prog.GenIR(c)
+	c.Finish()
 }
 
 func (c *Compiler) Writef(format string, args ...interface{}) {
@@ -115,6 +125,23 @@ func (c *Compiler) Variable(name string) Variable {
 	return v
 }
 
+func (c *Compiler) String(str string) Global {
+	istr := IRString(str)
+	g, ok := c.strs[istr]
+	if !ok {
+		g = Global(fmt.Sprintf("str%d", len(c.strs)))
+		c.strs[istr] = g
+	}
+	return g
+}
+
+func (c *Compiler) Finish() {
+	// Write all strings
+	for str, name := range c.strs {
+		c.Writef("data %s = %s\n", name, str)
+	}
+}
+
 type Operand interface {
 	Operand() string
 }
@@ -136,6 +163,9 @@ type Global string
 func (g Global) Operand() string {
 	return "$" + string(g)
 }
+func (g Global) String() string {
+	return g.Operand()
+}
 
 type IRInteger string
 
@@ -144,6 +174,37 @@ func IRInt(i int) IRInteger {
 }
 func (i IRInteger) Operand() string {
 	return string(i)
+}
+
+type IRString string
+
+func (s IRString) String() string {
+	b := &strings.Builder{}
+	b.WriteRune('{')
+	inStr := false
+	for i, ch := range append([]byte(s), 0) {
+		if ' ' <= ch && ch <= '~' { // Printable ASCII range
+			if !inStr {
+				if i > 0 {
+					b.WriteRune(',')
+				}
+				b.WriteString(` b "`)
+				inStr = true
+			}
+			b.WriteByte(ch)
+		} else {
+			if inStr {
+				b.WriteRune('"')
+				inStr = false
+			}
+			if i > 0 {
+				b.WriteRune(',')
+			}
+			fmt.Fprintf(b, " b %d", ch)
+		}
+	}
+	b.WriteString(" }")
+	return b.String()
 }
 
 type CallOperand struct {
