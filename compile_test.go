@@ -211,22 +211,33 @@ func TestStringLiteral(t *testing.T) {
 	/*
 		extern puts fn([I8]) I32
 		fn main() I32 {
-			puts("Hello, world!")
+			puts("str0")
+			puts("str1")
+			puts("str2")
 			return 0
 		}
 	*/
+	puts := func(s string) Statement {
+		return ExprStmt{CallExpr{VarExpr("puts"), []Expression{StringExpr(s)}}}
+	}
 	testCompile(t, Program{
 		VarDecl{"puts", FuncType{[]ConcreteType{PointerTo(TypeI8)}, TypeI32}},
 		Function{true, "main", TypeI32, nil, []Statement{
-			ExprStmt{CallExpr{VarExpr("puts"), []Expression{StringExpr("Hello, world!")}}},
+			puts("str0"),
+			puts("str1"),
+			puts("str2"),
 			ReturnStmt{IntegerExpr("0")},
 		}},
 	}, `
 		export function w $main() {
 		@start
 			%t1 =w call $puts(l $str0)
+			%t2 =w call $puts(l $str1)
+			%t3 =w call $puts(l $str2)
 			ret 0
 		}
-		data $str0 = { b "Hello, world!", b 0 }
+		data $str0 = { b "str0", b 0 }
+		data $str1 = { b "str1", b 0 }
+		data $str2 = { b "str2", b 0 }
 	`)
 }

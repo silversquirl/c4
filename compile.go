@@ -11,14 +11,16 @@ type Compiler struct {
 	w    io.Writer
 	temp Temporary
 	vars map[string]Variable
-	strs map[IRString]Global
+	strs []IRString
+	strM map[string]int // Map from string to index of entry in strs
 }
 
 func NewCompiler(w io.Writer) *Compiler {
 	return &Compiler{
 		w, 0,
 		make(map[string]Variable),
-		make(map[IRString]Global),
+		nil,
+		make(map[string]int),
 	}
 }
 
@@ -126,19 +128,19 @@ func (c *Compiler) Variable(name string) Variable {
 }
 
 func (c *Compiler) String(str string) Global {
-	istr := IRString(str)
-	g, ok := c.strs[istr]
+	i, ok := c.strM[str]
 	if !ok {
-		g = Global(fmt.Sprintf("str%d", len(c.strs)))
-		c.strs[istr] = g
+		i = len(c.strs)
+		c.strM[str] = i
+		c.strs = append(c.strs, IRString(str))
 	}
-	return g
+	return Global(fmt.Sprintf("str%d", i))
 }
 
 func (c *Compiler) Finish() {
 	// Write all strings
-	for str, name := range c.strs {
-		c.Writef("data %s = %s\n", name, str)
+	for i, str := range c.strs {
+		c.Writef("data $str%d = %s\n", i, str)
 	}
 }
 
