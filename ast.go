@@ -190,6 +190,18 @@ func (e VarExpr) PtrTo(c *Compiler) Operand {
 	return c.Variable(string(e)).Loc
 }
 
+type RefExpr struct{ V LValue }
+
+func (e RefExpr) TypeOf(c *Compiler) Type {
+	return PointerTo(e.V.TypeOf(c).(ConcreteType))
+}
+func (e RefExpr) Code() string {
+	return "&" + e.V.Code()
+}
+func (e RefExpr) GenIR(c *Compiler) Operand {
+	return e.V.PtrTo(c)
+}
+
 type BinaryExpr struct {
 	Op   BinaryOperator
 	L, R Expression

@@ -184,6 +184,28 @@ func TestVariables(t *testing.T) {
 	`)
 }
 
+func TestReferenceVariable(t *testing.T) {
+	/*
+		fn main() I32 {
+			var i I32
+			var j [I32]
+			j = &i
+			return 0
+		}
+	*/
+	testMainCompile(t, []Statement{
+		VarDecl{"i", TypeI32},
+		VarDecl{"j", PointerTo(TypeI32)},
+		ExprStmt{AssignExpr{VarExpr("j"), RefExpr{VarExpr("i")}}},
+		ReturnStmt{IntegerExpr("0")},
+	}, `
+		%t1 =l alloc4 4
+		%t2 =l alloc8 8
+		storel %t1, %t2
+		ret 0
+	`)
+}
+
 func TestFunctionCall(t *testing.T) {
 	/*
 		extern printi fn(I64)
