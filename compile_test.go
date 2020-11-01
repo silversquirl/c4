@@ -53,53 +53,70 @@ func testCompile(t *testing.T, prog Program, ir string) {
 	}
 }
 
+func testMainCompile(t *testing.T, stmts []Statement, ir string) {
+	ir = `export function w $main() { @start ` + ir + ` }`
+	testCompile(t, Program{Function{true, "main", TypeI32, nil, stmts}}, ir)
+}
+
 func TestReturn0(t *testing.T) {
 	/*
 		fn main() I32 {
 			return 0
 		}
 	*/
-	testCompile(t, Program{
-		Function{true, "main", TypeI32, nil, []Statement{
-			ReturnStmt{IntegerExpr("0")},
-		}},
-	}, `
-		export function w $main() {
-		@start
-			ret 0
+	testMainCompile(t, []Statement{ReturnStmt{IntegerExpr("0")}}, `ret 0`)
+}
+
+func TestArithmetic(t *testing.T) {
+	/*
+		fn main() I32 {
+			4 + 2
+			4 - 2
+			4 * 2
+			4 / 2
+			return 0
 		}
+	*/
+	bin := func(op BinaryOperator) Statement {
+		return ExprStmt{BinaryExpr{op, IntegerExpr("4"), IntegerExpr("2")}}
+	}
+	testMainCompile(t, []Statement{
+		bin(BOpAdd), bin(BOpSub),
+		bin(BOpMul), bin(BOpDiv),
+		ReturnStmt{IntegerExpr("0")},
+	}, `
+		%t1 =l add 4, 2
+		%t2 =l sub 4, 2
+		%t3 =l mul 4, 2
+		%t4 =l div 4, 2
+		ret 0
 	`)
 }
 
-func TestReturnArith(t *testing.T) {
+func TestNestedArithmetic(t *testing.T) {
 	/*
 		fn main() I32 {
 			return (1 + 10*2) * 2
 		}
 	*/
-	testCompile(t, Program{
-		Function{true, "main", TypeI32, nil, []Statement{
-			ReturnStmt{
-				BinaryExpr{BOpMul,
-					BinaryExpr{BOpAdd,
-						IntegerExpr("1"),
-						BinaryExpr{BOpMul,
-							IntegerExpr("10"),
-							IntegerExpr("2"),
-						},
+	testMainCompile(t, []Statement{
+		ReturnStmt{
+			BinaryExpr{BOpMul,
+				BinaryExpr{BOpAdd,
+					IntegerExpr("1"),
+					BinaryExpr{BOpMul,
+						IntegerExpr("10"),
+						IntegerExpr("2"),
 					},
-					IntegerExpr("2"),
 				},
+				IntegerExpr("2"),
 			},
-		}},
+		},
 	}, `
-		export function w $main() {
-		@start
-			%t1 =l mul 10, 2
-			%t2 =l add 1, %t1
-			%t3 =l mul %t2, 2
-			ret %t3
-		}
+		%t1 =l mul 10, 2
+		%t2 =l add 1, %t1
+		%t3 =l mul %t2, 2
+		ret %t3
 	`)
 }
 
