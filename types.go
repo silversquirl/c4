@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 func Compatible(a, b Type) bool {
 	if a.Equals(b) || b.Equals(a) {
 		return true
@@ -38,6 +40,7 @@ type ConcreteType interface {
 	IRTypeDecl() string
 }
 
+// TypeMetrics stores the size and alignment of a type. If a type's metrics are zero, a value of that type cannot be created.
 type TypeMetrics struct {
 	Size, Align int
 }
@@ -64,7 +67,7 @@ func (_ NumberType) Concrete() ConcreteType {
 // The type of decimal numeric literals
 type RationalType struct{}
 
-func (r RationalType) Equals(other Type) bool {
+func (_ RationalType) Equals(other Type) bool {
 	_, ok := other.(RationalType)
 	return ok
 }
@@ -239,5 +242,54 @@ func (_ PointerType) IRBaseTypeName() rune {
 	return 'w'
 }
 func (_ PointerType) IRTypeDecl() string {
+	return ""
+}
+
+type FuncType struct {
+	Params []ConcreteType
+	Return ConcreteType
+}
+
+func (a FuncType) Equals(other Type) bool {
+	b, ok := other.(FuncType)
+	if !ok {
+		return false
+	}
+	if a.Return != b.Return && !a.Return.Equals(b.Return) {
+		return false
+	}
+	if len(a.Params) != len(b.Params) {
+		return false
+	}
+	for i := range a.Params {
+		if !a.Params[i].Equals(b.Params[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (_ FuncType) IsConcrete() bool {
+	return true
+}
+func (f FuncType) Concrete() ConcreteType {
+	return f
+}
+func (f FuncType) Metrics() TypeMetrics {
+	return TypeMetrics{}
+}
+func (f FuncType) Code() string {
+	params := make([]string, len(f.Params))
+	for i, param := range f.Params {
+		params[i] = param.Code()
+	}
+	return "func(" + strings.Join(params, ", ") + ") " + f.Return.Code()
+}
+func (_ FuncType) IRTypeName() string {
+	return ""
+}
+func (_ FuncType) IRBaseTypeName() rune {
+	return 0
+}
+func (_ FuncType) IRTypeDecl() string {
 	return ""
 }

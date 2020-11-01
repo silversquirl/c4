@@ -4,7 +4,8 @@ import "os"
 
 func main() {
 	prog := Program{
-		VarDecl{"global", TypeI64},
+		VarDecl{"printi", FuncType{[]ConcreteType{TypeI64}, nil}},
+		// VarDecl{"global", TypeI64},
 		Function{true, "main", TypeI32, nil, []Statement{
 			/*
 				// return 0
@@ -27,19 +28,26 @@ func main() {
 				},
 			*/
 
+			/*
+				// var i I64
+				// var j I64
+				// i = 7
+				// j = 5
+				// i = i + j
+				// return i + global
+				VarDecl{"i", TypeI64},
+				VarDecl{"j", TypeI64},
+				ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
+				ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
+				ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
+				ReturnStmt{BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("global")}},
+			*/
+
 			// /*
-			// var i I64
-			// var j I64
-			// i = 7
-			// j = 5
-			// i = i + j
-			// return i + global
-			VarDecl{"i", TypeI64},
-			VarDecl{"j", TypeI64},
-			ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
-			ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
-			ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
-			ReturnStmt{BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("global")}},
+			// printi(42)
+			// return 0
+			ExprStmt{CallExpr{VarExpr("printi"), []Expression{IntegerExpr("42")}}},
+			ReturnStmt{IntegerExpr("0")},
 			// */
 		}},
 	}

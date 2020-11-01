@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Program []Toplevel
@@ -116,6 +117,56 @@ func (e AssignExpr) GenIR(c *Compiler) Operand {
 	// TODO: make extensible
 	c.Insn(0, 0, "store"+t.IRTypeName(), r, l)
 	return l
+}
+
+type CallExpr struct {
+	Func Expression
+	Args []Expression
+}
+
+func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
+	switch t := e.Func.TypeOf(c).(type) {
+	case FuncType:
+		return t, false
+	case PointerType:
+		return t.To.(FuncType), true
+	}
+	panic("Invalid function type")
+}
+func (e CallExpr) TypeOf(c *Compiler) Type {
+	t, _ := e.typeOf(c)
+	return t.Return
+}
+func (e CallExpr) Code() string {
+	args := make([]string, len(e.Args))
+	for i, arg := range e.Args {
+		args[i] = arg.Code()
+	}
+	return e.Func.Code() + "(" + strings.Join(args, ", ") + ")"
+}
+func (e CallExpr) GenIR(c *Compiler) Operand {
+	t, ptr := e.typeOf(c)
+	var f Operand
+	if ptr {
+		f = e.Func.GenIR(c)
+	} else {
+		f = e.Func.(LValue).PtrTo(c)
+	}
+
+	call := CallOperand{f, make([]TypedOperand, len(e.Args))}
+	for i, arg := range e.Args {
+		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName()
+		call.Args[i].Op = arg.GenIR(c)
+	}
+
+	if t.Return == nil {
+		c.Insn(0, 0, "call", call)
+		return nil
+	} else {
+		v := c.Temporary()
+		c.Insn(v, t.Return.IRBaseTypeName(), "call", call)
+		return v
+	}
 }
 
 type VarExpr string

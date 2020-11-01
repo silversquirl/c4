@@ -146,6 +146,31 @@ func (i IRInteger) Operand() string {
 	return string(i)
 }
 
+type CallOperand struct {
+	Func Operand
+	Args []TypedOperand
+}
+type TypedOperand struct {
+	Ty string
+	Op Operand
+}
+
+func (c CallOperand) Operand() string {
+	b := &strings.Builder{}
+	b.WriteString(c.Func.Operand())
+	b.WriteRune('(')
+	for i, arg := range c.Args {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(arg.Ty)
+		b.WriteRune(' ')
+		b.WriteString(arg.Op.Operand())
+	}
+	b.WriteRune(')')
+	return b.String()
+}
+
 type Variable struct {
 	Loc  Operand
 	Type ConcreteType
