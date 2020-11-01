@@ -362,7 +362,7 @@ const (
 type IntegerExpr string
 
 func (_ IntegerExpr) TypeOf(c *Compiler) Type {
-	return NumberType{}
+	return IntLitType{}
 }
 func (e IntegerExpr) Code() string {
 	return string(e)

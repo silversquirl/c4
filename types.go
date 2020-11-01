@@ -7,14 +7,14 @@ func Compatible(a, b Type) bool {
 		return true
 	}
 	switch a.(type) {
-	case NumberType, RationalType:
+	case IntLitType, FloatLitType:
 		switch b.(type) {
-		case NumberType, RationalType, PrimitiveType:
+		case IntLitType, FloatLitType, PrimitiveType:
 			return true
 		}
 	case PrimitiveType:
 		switch b.(type) {
-		case NumberType, RationalType:
+		case IntLitType, FloatLitType:
 			return true
 		}
 	}
@@ -51,30 +51,30 @@ type NumericType interface {
 }
 
 // The type of integral numeric literals
-type NumberType struct{}
+type IntLitType struct{}
 
-func (_ NumberType) Equals(other Type) bool {
-	_, ok := other.(NumberType)
+func (_ IntLitType) Equals(other Type) bool {
+	_, ok := other.(IntLitType)
 	return ok
 }
-func (_ NumberType) IsConcrete() bool {
+func (_ IntLitType) IsConcrete() bool {
 	return false
 }
-func (_ NumberType) Concrete() ConcreteType {
+func (_ IntLitType) Concrete() ConcreteType {
 	return TypeI64
 }
 
 // The type of decimal numeric literals
-type RationalType struct{}
+type FloatLitType struct{}
 
-func (_ RationalType) Equals(other Type) bool {
-	_, ok := other.(RationalType)
+func (_ FloatLitType) Equals(other Type) bool {
+	_, ok := other.(FloatLitType)
 	return ok
 }
-func (_ RationalType) IsConcrete() bool {
+func (_ FloatLitType) IsConcrete() bool {
 	return false
 }
-func (_ RationalType) Concrete() ConcreteType {
+func (_ FloatLitType) Concrete() ConcreteType {
 	return TypeF64
 }
 
