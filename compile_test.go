@@ -212,7 +212,10 @@ func TestStringLiteral(t *testing.T) {
 		extern puts fn([I8]) I32
 		fn main() I32 {
 			puts("str0")
+			puts("str0")
 			puts("str1")
+			puts("str1")
+			puts("str2")
 			puts("str2")
 			return 0
 		}
@@ -224,7 +227,10 @@ func TestStringLiteral(t *testing.T) {
 		VarDecl{"puts", FuncType{[]ConcreteType{PointerTo(TypeI8)}, TypeI32}},
 		Function{true, "main", TypeI32, nil, []Statement{
 			puts("str0"),
+			puts("str0"),
 			puts("str1"),
+			puts("str1"),
+			puts("str2"),
 			puts("str2"),
 			ReturnStmt{IntegerExpr("0")},
 		}},
@@ -232,8 +238,11 @@ func TestStringLiteral(t *testing.T) {
 		export function w $main() {
 		@start
 			%t1 =w call $puts(l $str0)
-			%t2 =w call $puts(l $str1)
-			%t3 =w call $puts(l $str2)
+			%t2 =w call $puts(l $str0)
+			%t3 =w call $puts(l $str1)
+			%t4 =w call $puts(l $str1)
+			%t5 =w call $puts(l $str2)
+			%t6 =w call $puts(l $str2)
 			ret 0
 		}
 		data $str0 = { b "str0", b 0 }
