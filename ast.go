@@ -62,33 +62,6 @@ type BinaryExpr struct {
 
 type BinaryOperator int
 
-func (op BinaryOperator) Operator() string {
-	switch op {
-	case BOpAdd:
-		return "+"
-	case BOpSub:
-		return "-"
-	case BOpMul:
-		return "*"
-	case BOpDiv:
-		return "/"
-	case BOpMod:
-		return "%"
-
-	case BOpOr:
-		return "|"
-	case BOpXor:
-		return "^"
-	case BOpAnd:
-		return "&"
-	case BOpShl:
-		return "<<"
-	case BOpShr:
-		return ">>"
-	}
-	panic("Invalid binary operator")
-}
-
 const (
 	BOpAdd BinaryOperator = iota
 	BOpSub
