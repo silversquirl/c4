@@ -62,7 +62,7 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 		if i > 0 {
 			pbuild.WriteString(", ")
 		}
-		pbuild.WriteString(param.Type)
+		pbuild.WriteString(param.Ty)
 		pbuild.WriteRune(' ')
 		pbuild.WriteString(param.Name)
 	}
@@ -79,7 +79,7 @@ func (c *Compiler) EndFunction() {
 
 type IRParam struct {
 	Name string
-	Type string
+	Ty   string
 }
 
 func (c *Compiler) Temporary() Temporary {
@@ -235,6 +235,6 @@ func (c CallOperand) Operand() string {
 }
 
 type Variable struct {
-	Loc  Operand
-	Type ConcreteType
+	Loc Operand
+	Ty  ConcreteType
 }

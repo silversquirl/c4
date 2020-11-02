@@ -19,21 +19,21 @@ type Toplevel interface {
 }
 
 type Function struct {
-	Export bool
-	Name   string
-	Return ConcreteType
-	Params []VarDecl
-	Code   []Statement
+	Pub   bool
+	Name  string
+	Param []VarDecl
+	Ret   ConcreteType
+	Code  []Statement
 }
 
 func (f Function) ToplevelIR(c *Compiler) {
-	params := make([]IRParam, len(f.Params))
-	for i, param := range f.Params {
+	params := make([]IRParam, len(f.Param))
+	for i, param := range f.Param {
 		params[i].Name = param.Name
-		params[i].Type = param.Type.IRTypeName()
+		params[i].Ty = param.Ty.IRTypeName()
 	}
 
-	c.StartFunction(f.Export, f.Name, params, f.Return.IRTypeName())
+	c.StartFunction(f.Pub, f.Name, params, f.Ret.IRTypeName())
 	defer c.EndFunction()
 
 	for _, stmt := range f.Code {
@@ -48,17 +48,17 @@ type Statement interface {
 
 type VarDecl struct {
 	Name string
-	Type ConcreteType
+	Ty   ConcreteType
 }
 
 func (d VarDecl) Code() string {
-	return "var " + d.Name + " " + d.Type.Code()
+	return "var " + d.Name + " " + d.Ty.Code()
 }
 func (d VarDecl) GenIR(c *Compiler) {
-	c.DeclareLocal(d.Name, d.Type)
+	c.DeclareLocal(d.Name, d.Ty)
 }
 func (d VarDecl) ToplevelIR(c *Compiler) {
-	c.DeclareGlobal(d.Name, d.Type)
+	c.DeclareGlobal(d.Name, d.Ty)
 }
 
 type ReturnStmt struct {
@@ -131,7 +131,7 @@ func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
 }
 func (e CallExpr) TypeOf(c *Compiler) Type {
 	t, _ := e.typeOf(c)
-	return t.Return
+	return t.Ret
 }
 func (e CallExpr) Code() string {
 	args := make([]string, len(e.Args))
@@ -156,12 +156,12 @@ func (e CallExpr) GenIR(c *Compiler) Operand {
 		call.Args[i].Op = arg.GenIR(c)
 	}
 
-	if t.Return == nil {
+	if t.Ret == nil {
 		c.Insn(0, 0, "call", call)
 		return nil
 	} else {
 		v := c.Temporary()
-		c.Insn(v, t.Return.IRBaseTypeName(), "call", call)
+		c.Insn(v, t.Ret.IRBaseTypeName(), "call", call)
 		return v
 	}
 }
@@ -196,7 +196,7 @@ func genLValueIR(lv LValue, c *Compiler) Operand {
 type VarExpr string
 
 func (e VarExpr) TypeOf(c *Compiler) Type {
-	return c.Variable(string(e)).Type
+	return c.Variable(string(e)).Ty
 }
 func (e VarExpr) Code() string {
 	return string(e)

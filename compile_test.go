@@ -55,7 +55,7 @@ func testCompile(t *testing.T, prog Program, ir string) {
 
 func testMainCompile(t *testing.T, stmts []Statement, ir string) {
 	ir = `export function w $main() { @start ` + ir + ` }`
-	testCompile(t, Program{Function{true, "main", TypeI32, nil, stmts}}, ir)
+	testCompile(t, Program{Function{true, "main", nil, TypeI32, stmts}}, ir)
 }
 
 func TestReturn0(t *testing.T) {
@@ -148,7 +148,7 @@ func TestVariables(t *testing.T) {
 	*/
 	testCompile(t, Program{
 		VarDecl{"global", TypeI32},
-		Function{true, "main", TypeI32, nil, []Statement{
+		Function{true, "main", nil, TypeI32, []Statement{
 			VarDecl{"i", TypeI32},
 			VarDecl{"j", TypeI32},
 			ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
@@ -271,7 +271,7 @@ func TestFunctionCall(t *testing.T) {
 	*/
 	testCompile(t, Program{
 		VarDecl{"printi", FuncType{[]ConcreteType{TypeI64}, nil}},
-		Function{true, "main", TypeI32, nil, []Statement{
+		Function{true, "main", nil, TypeI32, []Statement{
 			ExprStmt{CallExpr{VarExpr("printi"), []Expression{IntegerExpr("42")}}},
 			ReturnStmt{IntegerExpr("0")},
 		}},
@@ -302,7 +302,7 @@ func TestStringLiteral(t *testing.T) {
 	}
 	testCompile(t, Program{
 		VarDecl{"puts", FuncType{[]ConcreteType{PointerTo(TypeI8)}, TypeI32}},
-		Function{true, "main", TypeI32, nil, []Statement{
+		Function{true, "main", nil, TypeI32, []Statement{
 			puts("str0"),
 			puts("str0"),
 			puts("str1"),

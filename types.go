@@ -246,8 +246,8 @@ func (_ PointerType) IRTypeDecl() string {
 }
 
 type FuncType struct {
-	Params []ConcreteType
-	Return ConcreteType
+	Param []ConcreteType
+	Ret   ConcreteType
 }
 
 func (a FuncType) Equals(other Type) bool {
@@ -255,14 +255,14 @@ func (a FuncType) Equals(other Type) bool {
 	if !ok {
 		return false
 	}
-	if a.Return != b.Return && !a.Return.Equals(b.Return) {
+	if a.Ret != b.Ret && !a.Ret.Equals(b.Ret) {
 		return false
 	}
-	if len(a.Params) != len(b.Params) {
+	if len(a.Param) != len(b.Param) {
 		return false
 	}
-	for i := range a.Params {
-		if !a.Params[i].Equals(b.Params[i]) {
+	for i := range a.Param {
+		if !a.Param[i].Equals(b.Param[i]) {
 			return false
 		}
 	}
@@ -278,11 +278,11 @@ func (f FuncType) Metrics() TypeMetrics {
 	return TypeMetrics{}
 }
 func (f FuncType) Code() string {
-	params := make([]string, len(f.Params))
-	for i, param := range f.Params {
+	params := make([]string, len(f.Param))
+	for i, param := range f.Param {
 		params[i] = param.Code()
 	}
-	return "func(" + strings.Join(params, ", ") + ") " + f.Return.Code()
+	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Code()
 }
 func (_ FuncType) IRTypeName() string {
 	return ""
