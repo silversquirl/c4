@@ -16,7 +16,7 @@ func (f Function) GenToplevel(c *Compiler) {
 	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName())
 	defer c.EndFunction()
 
-	for _, stmt := range f.Code {
+	for _, stmt := range f.Body {
 		stmt.GenStatement(c)
 	}
 }

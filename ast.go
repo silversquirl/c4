@@ -11,7 +11,7 @@ type Function struct {
 	Name  string
 	Param []VarDecl
 	Ret   TypeExpr
-	Code  []Statement
+	Body  []Statement
 }
 
 type Statement interface {

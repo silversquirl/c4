@@ -31,7 +31,7 @@ type ConcreteType interface {
 	Type
 	Metrics() TypeMetrics
 	// Source code representing the type
-	Code() string
+	Format() string
 	// The QBE name of the base, extended or aggregate type corresponding to this type
 	IRTypeName() string
 	// The QBE name of the base type closest to this type, if any
@@ -124,7 +124,7 @@ func (p PrimitiveType) Metrics() TypeMetrics {
 	panic("Invalid primitive type")
 }
 
-func (p PrimitiveType) Code() string {
+func (p PrimitiveType) Format() string {
 	switch p {
 	case TypeI64:
 		return "I64"
@@ -228,8 +228,8 @@ func (p PointerType) Concrete() ConcreteType {
 func (_ PointerType) Metrics() TypeMetrics {
 	return TypeMetrics{8, 8}
 }
-func (p PointerType) Code() string {
-	return "*" + p.To.Code()
+func (p PointerType) Format() string {
+	return "*" + p.To.Format()
 }
 func (_ PointerType) IRTypeName() string {
 	return "l"
@@ -274,12 +274,12 @@ func (f FuncType) Concrete() ConcreteType {
 func (f FuncType) Metrics() TypeMetrics {
 	return TypeMetrics{}
 }
-func (f FuncType) Code() string {
+func (f FuncType) Format() string {
 	params := make([]string, len(f.Param))
 	for i, param := range f.Param {
-		params[i] = param.Code()
+		params[i] = param.Format()
 	}
-	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Code()
+	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Format()
 }
 func (_ FuncType) IRTypeName() string {
 	return ""
