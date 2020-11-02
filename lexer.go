@@ -2,7 +2,6 @@
 package main
 
 import (
-	"io"
 	"regexp"
 	"strings"
 )
@@ -21,68 +20,74 @@ func (l *lexer) tokenize(code string) {
 	for _, m := range lexerRegex.FindAllStringSubmatch(code, -1) {
 		m = m[1:]
 		for i, rule := range lexerRules {
-			text := m[i]
-			if text != "" {
+			if m[i] != "" {
+				tok := Token{rule.Ty, m[i]}
 				if rule.Sub != nil {
-					text = rule.Sub(text)
+					tok = rule.Sub(tok)
 				}
-				l.emitToken(text, rule.Ty)
+				l.emitToken(tok)
 				break
 			}
 		}
 	}
-	l.finish()
+	l.flush()
 	close(l.toks)
 }
-func (l *lexer) emitToken(text string, ty TokenType) {
-	switch ty {
+func (l *lexer) emitToken(tok Token) {
+	switch tok.Ty {
 	case TComment, TSpace:
 		return
 	case TNewline:
 		if l.tok.Ty.autoSemi() {
-			ty = TSemi
+			tok.Ty = TSemi
 		} else {
 			return
 		}
 	}
 
-	if l.tok.Ty > 0 {
+	l.flush()
+	l.tok = tok
+}
+func (l *lexer) flush() {
+	switch l.tok.Ty {
+	case 0, TBackslash:
+	default:
 		l.toks <- l.tok
 	}
-
-	l.tok = Token{ty, text}
 }
-func (l *lexer) finish() {
-	if l.tok.Ty > 0 {
-		l.toks <- l.tok
+
+func parseKeyword(tok Token) Token {
+	if ty, ok := lexerKw[tok.S]; ok {
+		tok.Ty = ty
 	}
+	return tok
 }
-
-func parseString(text string) string {
-	return text
+func parseString(tok Token) Token {
+	return tok
 }
-func parseInt(text string) string {
-	return text
+func parseInt(tok Token) Token {
+	return tok
 }
-func parseFloat(text string) string {
-	return text
+func parseFloat(tok Token) Token {
+	return tok
 }
 
 var lexerRegex *regexp.Regexp
 var lexerRules []lexerRule
+var lexerKw = map[string]TokenType{}
 
 type lexerRule struct {
 	Ty  TokenType
-	Sub func(string) string
+	Sub func(Token) Token
 }
 
 func init() {
 	// Generate lexer regex and match mappings
 	// Wouldn't it be nice if we could do this at compile time?
 	regexBuilder := &strings.Builder{}
-	for ty := TEOF; ty < TokenTypeMax; ty++ {
-		var pat string              // regex pattern
-		var sub func(string) string // sub-lexer
+	for ty := TEOF; ty < LexTokenMax; ty++ {
+		var pat string            // regex pattern
+		var sub func(Token) Token // sub-lexer
 
 		switch ty {
 		case TEOF:
@@ -96,25 +101,26 @@ func init() {
 			pat = `\n`
 		case TIdent:
 			pat = `[\p{Ll}_][\pL\pN]*_*`
+			sub = parseKeyword
 		case TType:
 			pat = `\p{Lu}[\pL\pN]*`
 		case TString:
-			pat = `"(?:[^"]|\\")*"`
+			pat = `"(?:[^"]|\\.)*"`
 			sub = parseString
 		case TInteger:
 			// TODO: type suffixes
-			pat = `0x[0-9A-Fa-f_]+|0b[01_]+|0[0-7_]*|[0-9_]+`
+			pat = `[-+]?(?:0x[0-9A-Fa-f_]+|0b[01_]+|0[0-7_]*|[0-9_]+)`
 			sub = parseInt
 		case TFloat:
 			// TODO: type suffixes, hex floats(?), exponents
-			pat = `\d+\.\d*|\.\d+`
+			pat = `[-+]?(?:\d+\.\d*|\.\d+)`
 			sub = parseFloat
 
 		case TInvalid:
 			pat = `.`
 
 		default:
-			// Exploit the generated String() method to autogenerate rules for operators and keywords
+			// Exploit the generated String() method to autogenerate rules for operators
 			s := ty.String()
 			e := len(s) - 1
 			if s[0] == '\'' && s[e] == '\'' {
@@ -146,38 +152,13 @@ func init() {
 		lexerRules = append(lexerRules, lexerRule{ty, sub})
 	}
 	lexerRegex = regexp.MustCompile(regexBuilder.String())
-}
 
-type cachingReader struct {
-	strings.Builder
-	r io.RuneReader
-}
-
-func (r *cachingReader) ReadRune() (ch rune, size int, err error) {
-	ch, size, err = r.r.ReadRune()
-	if err == nil {
-		r.Builder.WriteRune(ch)
+	// Generate keyword table
+	for ty := TKeywordStart + 1; ty < TKeywordEnd; ty++ {
+		kw := ty.String()
+		kw = kw[1 : len(kw)-1]
+		lexerKw[kw] = ty
 	}
-	return
-}
-
-type Token struct {
-	Ty TokenType
-	S  string
-}
-
-type TokenType int
-
-// autoSemi returns true if subsequent newlines should be replaced with semicolons
-func (ty TokenType) autoSemi() bool {
-	switch ty {
-	case TRParen, TRSquare, TRBrace:
-	case TIdent, TType:
-	case TString, TInteger, TFloat:
-	default:
-		return false
-	}
-	return true
 }
 
 const (
@@ -186,9 +167,10 @@ const (
 	TComment // comment
 	TSpace   // whitespace
 
-	TNewline // newline
-	TSemi    // ';'
-	TComma   // ','
+	TNewline   // newline
+	TBackslash // '\'
+	TSemi      // ';'
+	TComma     // ','
 
 	// Matching pairs
 	TLParen  // '('
@@ -197,6 +179,25 @@ const (
 	TRSquare // ']'
 	TLBrace  // '{'
 	TRBrace  // '}'
+
+	// Identifiers
+	TIdent // identifier
+	TType  // type name
+
+	// Constants
+	TString  // string literal
+	TFloat   // float literal
+	TInteger // integer literal
+
+	// Multi-char operators
+	TShl  // '<<'
+	TShr  // '>>'
+	TLand // '&&'
+	TLor  // '||'
+	TCeq  // '=='
+	TCne  // '!='
+	TCle  // '<='
+	TCge  // '>='
 
 	// Single character operators
 	TEquals  // '='
@@ -212,17 +213,14 @@ const (
 	TLess    // '<'
 	TGreater // '>'
 
-	// Multi-char operators
-	TShl  // '<<'
-	TShr  // '>>'
-	TLand // '&&'
-	TLor  // '||'
-	TCeq  // '=='
-	TCne  // '!='
-	TCle  // '<='
-	TCge  // '>='
+	TInvalid // invalid token
+
+	// Tokens after this point will not be produced by the 1st lexer layer
+	// They may be produced by sublexers
+	LexTokenMax
 
 	// Keywords
+	TKeywordStart
 	TKelse   // 'else'
 	TKextern // 'extern'
 	TKfn     // 'fn'
@@ -232,20 +230,24 @@ const (
 	TKreturn // 'return'
 	TKtype   // 'type'
 	TKvar    // 'var'
-
-	// Identifiers
-	TIdent // identifier
-	TType  // type name
-
-	// Constants
-	TString  // string literal
-	TInteger // integer literal
-	TFloat   // float literal
-
-	TInvalid // invalid token
-
-	TokenTypeMax
-	TokenTypeMin   = TEOF
-	TokenTypeKwMin = TKelse
-	TokenTypeKwMax = TKvar + 1
+	TKeywordEnd
 )
+
+type Token struct {
+	Ty TokenType
+	S  string
+}
+
+type TokenType int
+
+// autoSemi returns true if subsequent newlines should be replaced with semicolons
+func (ty TokenType) autoSemi() bool {
+	switch ty {
+	case TLParen, TLSquare, TLBrace:
+	case TIdent, TType:
+	case TString, TInteger, TFloat:
+	default:
+		return false
+	}
+	return true
+}
