@@ -55,19 +55,31 @@ var statementParselets = map[TokenType]statementParselet{
 	},
 }
 
-var prefixExprParselets = map[TokenType]prefixExprParselet{
-	TIdent: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
-		return VarExpr(tok.S)
-	}},
-	TString: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
-		return StringExpr(tok.S)
-	}},
-	TFloat: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
-		return FloatExpr(tok.S)
-	}},
-	TInteger: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
-		return IntegerExpr(tok.S)
-	}},
+var prefixExprParselets map[TokenType]prefixExprParselet
+
+func init() {
+	prefixExprParselets = map[TokenType]prefixExprParselet{
+		TIdent: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
+			return VarExpr(tok.S)
+		}},
+		TString: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
+			return StringExpr(tok.S)
+		}},
+		TFloat: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
+			return FloatExpr(tok.S)
+		}},
+		TInteger: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
+			return IntegerExpr(tok.S)
+		}},
+
+		TAmp: {PrecPrefix, func(prec int, p *parser, tok Token) Expression {
+			v, ok := p.parseExpression(prec).(LValue)
+			if !ok {
+				panic("Reference of non-lvalue")
+			}
+			return RefExpr{v}
+		}},
+	}
 }
 
 var exprParselets map[TokenType]exprParselet

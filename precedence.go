@@ -11,6 +11,8 @@ const (
 	PrecMul
 	PrecSum
 
+	PrecPrefix
+
 	PrecCall
 	PrecLiteral
 )
