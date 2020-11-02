@@ -47,6 +47,11 @@ type AssignExpr struct {
 	L LValue
 	R Expression
 }
+type MutateExpr struct {
+	Op BinaryOperator
+	L  LValue
+	R  Expression
+}
 
 type CallExpr struct {
 	Func Expression

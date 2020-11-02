@@ -16,6 +16,9 @@ func (r ReturnStmt) Format() string {
 func (e AssignExpr) Format() string {
 	return e.L.Format() + " = " + e.R.Format()
 }
+func (e MutateExpr) Format() string {
+	return fmt.Sprintf("%s %s= %s", e.L.Format(), e.Op, e.R.Format())
+}
 
 func (e CallExpr) Format() string {
 	args := make([]string, len(e.Args))

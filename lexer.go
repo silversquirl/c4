@@ -190,6 +190,20 @@ const (
 	TFloat   // float literal
 	TInteger // integer literal
 
+	// Mutation operators
+	TMadd  // '+='
+	TMsub  // '-='
+	TMmul  // '*='
+	TMdiv  // '/='
+	TMmod  // '%='
+	TMor   // '|='
+	TMxor  // '^='
+	TMand  // '&='
+	TMshl  // '<<='
+	TMshr  // '>>='
+	TMland // '&&='
+	TMlor  // '||='
+
 	// Multi-char operators
 	TShl  // '<<'
 	TShr  // '>>'

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -51,7 +52,7 @@ func testCompile(t *testing.T, code, ir string) {
 		}
 
 		if spc0 != spc1 || ir0[i0] != ir1[i1] {
-			t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s", i0, i1, b)
+			t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s", i0, i1, ir0[i0:])
 		}
 		i0++
 		i1++
@@ -84,6 +85,31 @@ func TestPrefixExpr(t *testing.T) {
 
 		ret 0
 	`)
+}
+
+func TestMutate(t *testing.T) {
+	n := 0
+	m := func(op string) string {
+		n += 2
+		return fmt.Sprintf(`
+			%%t%[1]d =w loadw %%t1
+			%%t%[2]d =w %[3]s %%t%[1]d, 1
+			storew %%t%[2]d, %%t1
+		`, n, n+1, op)
+	}
+	testMainCompile(t, `
+		var a I32
+		a += 1; a -= 1; a *= 1; a /= 1
+		a %= 1; a |= 1; a ^= 1; a &= 1
+		a <<= 1; a >>= 1
+		// a &&= 1
+		// a ||= 1
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1`+
+		m("add")+m("sub")+m("mul")+m("div")+
+		m("rem")+m("or")+m("xor")+m("and")+
+		m("shl")+m("sar"))
 }
 
 // TODO: test unsigned div, mod and shr

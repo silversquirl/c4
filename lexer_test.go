@@ -23,8 +23,10 @@ func TestTokenize(t *testing.T) {
 	testTokens(t, `
 		// Comment
 		;,()[]{} \
+		+= -= *= /= %= |= ^= \
+		&= <<= >>= &&= ||= \
 		=+-*/%!|^&<> \
-		<<>>&&||==!=<=>= \
+		<<>>&&||<=>===!= \
 		else extern fn for if pub return type var
 		elseexternfnforifpubreturntypevar \
 		fooBar _ _foo foo_ \
@@ -34,12 +36,16 @@ func TestTokenize(t *testing.T) {
 		{TSemi, ";"}, {TComma, ","}, {TLParen, "("}, {TRParen, ")"},
 		{TLSquare, "["}, {TRSquare, "]"}, {TLBrace, "{"}, {TRBrace, "}"},
 
+		{TMadd, "+="}, {TMsub, "-="}, {TMmul, "*="}, {TMdiv, "/="},
+		{TMmod, "%="}, {TMor, "|="}, {TMxor, "^="}, {TMand, "&="},
+		{TMshl, "<<="}, {TMshr, ">>="}, {TMland, "&&="}, {TMlor, "||="},
+
 		{TEquals, "="}, {TPlus, "+"}, {TMinus, "-"}, {TAster, "*"},
 		{TSlash, "/"}, {TPerc, "%"}, {TExcl, "!"}, {TPipe, "|"},
 		{TCaret, "^"}, {TAmp, "&"}, {TLess, "<"}, {TGreater, ">"},
 
 		{TShl, "<<"}, {TShr, ">>"}, {TLand, "&&"}, {TLor, "||"},
-		{TCeq, "=="}, {TCne, "!="}, {TCle, "<="}, {TCge, ">="},
+		{TCle, "<="}, {TCge, ">="}, {TCeq, "=="}, {TCne, "!="},
 
 		{TKelse, "else"}, {TKextern, "extern"}, {TKfn, "fn"}, {TKfor, "for"},
 		{TKif, "if"}, {TKpub, "pub"}, {TKreturn, "return"}, {TKtype, "type"},

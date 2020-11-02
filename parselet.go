@@ -121,22 +121,31 @@ func init() {
 	}
 
 	binary := func(prec int, p *parser, tok Token, left Expression) Expression {
-		op, ok := binOpMap[tok.S]
-		if !ok {
+		if op, ok := binOpMap[tok.S]; !ok {
 			panic("Invalid binary operator: " + tok.S)
+		} else {
+			return BinaryExpr{op, left, p.parseExpression(prec)}
 		}
+	}
 
-		right := p.parseExpression(prec)
-		return BinaryExpr{op, left, right}
+	mutate := func(prec int, p *parser, tok Token, left Expression) Expression {
+		binOp := tok.S[:len(tok.S)-1]
+		if l, ok := left.(LValue); !ok {
+			panic("Mutate of non-lvalue")
+		} else if op, ok := binOpMap[binOp]; !ok {
+			panic("Invalid mutation operator: " + tok.S)
+		} else {
+			return MutateExpr{op, l, p.parseExpression(prec - 1)}
+		}
 	}
 
 	exprParselets = map[TokenType]exprParselet{
 		TEquals: {PrecAssign, func(prec int, p *parser, tok Token, left Expression) Expression {
-			l, ok := left.(LValue)
-			if !ok {
+			if l, ok := left.(LValue); !ok {
 				panic("Assign to non-lvalue")
+			} else {
+				return AssignExpr{l, p.parseExpression(prec - 1)}
 			}
-			return AssignExpr{l, p.parseExpression(prec - 1)}
 		}},
 
 		TPlus:  {PrecSum, binary},
@@ -150,6 +159,19 @@ func init() {
 		TAmp:   {PrecAnd, binary},
 		TShl:   {PrecShift, binary},
 		TShr:   {PrecShift, binary},
+
+		TMadd:  {PrecAssign, mutate},
+		TMsub:  {PrecAssign, mutate},
+		TMmul:  {PrecAssign, mutate},
+		TMdiv:  {PrecAssign, mutate},
+		TMmod:  {PrecAssign, mutate},
+		TMor:   {PrecAssign, mutate},
+		TMxor:  {PrecAssign, mutate},
+		TMand:  {PrecAssign, mutate},
+		TMshl:  {PrecAssign, mutate},
+		TMshr:  {PrecAssign, mutate},
+		TMland: {PrecAssign, mutate},
+		TMlor:  {PrecAssign, mutate},
 
 		TLParen: {PrecCall, func(prec int, p *parser, tok Token, left Expression) Expression {
 			call := CallExpr{Func: left}

@@ -38,11 +38,23 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 }
 
 func (e AssignExpr) GenExpression(c *Compiler) Operand {
-	t := e.TypeOf(c).(ConcreteType)
+	// TODO: allow storing non-numeric types
+	ty := e.TypeOf(c).(NumericType)
 	l := e.L.GenPointer(c)
 	r := e.R.GenExpression(c)
-	// TODO: make extensible
-	c.Insn(0, 0, "store"+t.IRTypeName(), r, l)
+	genPtrStore(l, r, ty, c)
+	return l
+}
+func (e MutateExpr) GenExpression(c *Compiler) Operand {
+	ty := e.TypeOf(c).(NumericType)
+
+	l := e.L.GenPointer(c)
+	lv := genPtrLoad(l, ty, c)
+	r := e.R.GenExpression(c)
+
+	v := c.Temporary()
+	c.Insn(v, ty.IRBaseTypeName(), e.Op.Instruction(ty), lv, r)
+	genPtrStore(l, v, ty, c)
 	return l
 }
 
@@ -72,13 +84,11 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 	}
 }
 
-func genLValueExpr(lv LValue, c *Compiler) Operand {
-	ty, ok := lv.TypeOf(c).(NumericType)
-	if !ok {
-		panic("Attempted load of non-numeric type")
-	}
-
-	ptr := lv.GenPointer(c)
+func genPtrStore(ptr, val Operand, ty NumericType, c *Compiler) {
+	// TODO: make extensible
+	c.Insn(0, 0, "store"+ty.IRTypeName(), val, ptr)
+}
+func genPtrLoad(ptr Operand, ty NumericType, c *Compiler) Operand {
 	op := "load"
 	if ty.IRTypeName() != string(ty.IRBaseTypeName()) {
 		if ty.(NumericType).Signed() {
@@ -92,6 +102,15 @@ func genLValueExpr(lv LValue, c *Compiler) Operand {
 	tmp := c.Temporary()
 	c.Insn(tmp, ty.IRBaseTypeName(), op, ptr)
 	return tmp
+}
+func genLValueExpr(lv LValue, c *Compiler) Operand {
+	ty, ok := lv.TypeOf(c).(NumericType)
+	if !ok {
+		panic("Attempted load of non-numeric type")
+	}
+
+	ptr := lv.GenPointer(c)
+	return genPtrLoad(ptr, ty, c)
 }
 
 func (e VarExpr) GenExpression(c *Compiler) Operand {
