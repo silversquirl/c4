@@ -50,19 +50,42 @@ func init() {
 	}
 }
 
-var statementParselets = map[TokenType]statementParselet{
-	TKreturn: func(p *parser, tok Token) []Statement {
-		e := p.parseExpression(0)
-		return []Statement{ReturnStmt{e}}
-	},
-	TKvar: func(p *parser, tok Token) []Statement {
-		vds := p.parseVarTypes()
-		stmts := make([]Statement, len(vds))
-		for i, vd := range vds {
-			stmts[i] = vd
-		}
-		return stmts
-	},
+var statementParselets map[TokenType]statementParselet
+
+func init() {
+	statementParselets = map[TokenType]statementParselet{
+		TKreturn: func(p *parser, tok Token) []Statement {
+			e := p.parseExpression(0)
+			return []Statement{ReturnStmt{e}}
+		},
+		TKvar: func(p *parser, tok Token) []Statement {
+			vds := p.parseVarTypes()
+			stmts := make([]Statement, len(vds))
+			for i, vd := range vds {
+				stmts[i] = vd
+			}
+			return stmts
+		},
+		TKif: func(p *parser, tok Token) []Statement {
+			i := IfStmt{}
+			i.Cond = p.parseExpression(0)
+			p.require(TLBrace)
+			for l := p.list(TSemi, TRBrace); l.next(); {
+				i.Then = append(i.Then, p.parseStatement()...)
+			}
+
+			if p.accept(TKelse) {
+				p.require(TLBrace)
+				for l := p.list(TSemi, TRBrace); l.next(); {
+					i.Else = append(i.Else, p.parseStatement()...)
+				}
+			}
+
+			// TODO: else if
+
+			return []Statement{i}
+		},
+	}
 }
 
 var prefixExprParselets map[TokenType]prefixExprParselet

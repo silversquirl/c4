@@ -28,6 +28,26 @@ func (d VarDecl) GenToplevel(c *Compiler) {
 	c.DeclareGlobal(d.Name, d.Ty.Get(c))
 }
 
+func (i IfStmt) GenStatement(c *Compiler) {
+	thenB := c.Block()
+	elseB := c.Block()
+	endB := c.Block()
+
+	cond := i.Cond.GenExpression(c)
+	c.Insn(0, 0, "jnz", cond, thenB, elseB)
+
+	c.StartBlock(thenB)
+	for _, stmt := range i.Then {
+		stmt.GenStatement(c)
+	}
+	c.Insn(0, 0, "jmp", endB)
+	c.StartBlock(elseB)
+	for _, stmt := range i.Else {
+		stmt.GenStatement(c)
+	}
+	c.StartBlock(endB)
+}
+
 func (r ReturnStmt) GenStatement(c *Compiler) {
 	v := r.Value.GenExpression(c)
 	c.Insn(0, 0, "ret", v)

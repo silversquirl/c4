@@ -229,6 +229,62 @@ func TestSmallTypes(t *testing.T) {
 	`)
 }
 
+func TestIf(t *testing.T) {
+	testMainCompile(t, `
+		if 1 {
+			return 0
+		}
+		if 0 {
+			return 1
+		}
+	`, `
+		jnz 1, @b1, @b2
+	@b1
+		ret 0
+		jmp @b3
+	@b2
+	@b3
+
+		jnz 0, @b4, @b5
+	@b4
+		ret 1
+		jmp @b6
+	@b5
+	@b6
+	`)
+}
+
+func TestIfElse(t *testing.T) {
+	testMainCompile(t, `
+		if 1 {
+			return 0
+		} else {
+			return 1
+		}
+		if 0 {
+			return 2
+		} else {
+			return 3
+		}
+	`, `
+		jnz 1, @b1, @b2
+	@b1
+		ret 0
+		jmp @b3
+	@b2
+		ret 1
+	@b3
+
+		jnz 0, @b4, @b5
+	@b4
+		ret 2
+		jmp @b6
+	@b5
+		ret 3
+	@b6
+	`)
+}
+
 func TestReferenceVariable(t *testing.T) {
 	testMainCompile(t, `
 		var i I32

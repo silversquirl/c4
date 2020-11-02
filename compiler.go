@@ -8,8 +8,11 @@ import (
 )
 
 type Compiler struct {
-	w    io.Writer
+	w io.Writer
+
+	blk  Block
 	temp Temporary
+
 	typs map[string]ConcreteType
 	vars map[string]Variable
 	strs []IRString
@@ -18,7 +21,7 @@ type Compiler struct {
 
 func NewCompiler(w io.Writer) *Compiler {
 	return &Compiler{
-		w, 0,
+		w, 0, 0,
 		map[string]ConcreteType{
 			"I64": TypeI64,
 			"I32": TypeI32,
@@ -90,13 +93,22 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 func (c *Compiler) EndFunction() {
 	c.Writef("}\n")
 
-	// Reset temporaries
+	// Reset counters
 	c.temp = 0
+	c.blk = 0
 }
 
 type IRParam struct {
 	Name string
 	Ty   string
+}
+
+func (c *Compiler) StartBlock(block Block) {
+	c.Writef("%s\n", block)
+}
+func (c *Compiler) Block() Block {
+	c.blk++
+	return c.blk
 }
 
 func (c *Compiler) Temporary() Temporary {
@@ -176,6 +188,15 @@ func (c *Compiler) Finish() {
 
 type Operand interface {
 	Operand() string
+}
+
+type Block uint
+
+func (b Block) Operand() string {
+	return fmt.Sprintf("@b%d", b)
+}
+func (b Block) String() string {
+	return b.Operand()
 }
 
 type Temporary uint

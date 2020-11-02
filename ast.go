@@ -24,6 +24,11 @@ type VarDecl struct {
 	Ty   TypeExpr
 }
 
+type IfStmt struct {
+	Cond       Expression
+	Then, Else []Statement
+}
+
 type ReturnStmt struct {
 	Value Expression
 }

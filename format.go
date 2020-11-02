@@ -6,8 +6,27 @@ import (
 	"unicode/utf8"
 )
 
+func fmtBlock(body []Statement) string {
+	b := &strings.Builder{}
+	b.WriteByte('{')
+	for _, s := range body {
+		b.WriteRune('\n')
+		b.WriteString(s.Format())
+	}
+	b.WriteByte('}')
+	return b.String()
+}
+
 func (d VarDecl) Format() string {
 	return "var " + d.Name + " " + d.Ty.Format()
+}
+
+func (i IfStmt) Format() string {
+	s := "if " + i.Cond.Format() + " " + fmtBlock(i.Then)
+	if i.Else != nil {
+		s += " else " + fmtBlock(i.Else)
+	}
+	return s
 }
 
 func (r ReturnStmt) Format() string {
