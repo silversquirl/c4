@@ -101,6 +101,14 @@ func init() {
 	}
 
 	exprParselets = map[TokenType]exprParselet{
+		TEquals: {PrecAssign, func(prec int, p *parser, tok Token, left Expression) Expression {
+			l, ok := left.(LValue)
+			if !ok {
+				panic("Assign to non-lvalue")
+			}
+			return AssignExpr{l, p.parseExpression(prec - 1)}
+		}},
+
 		TPlus:  {PrecSum, binary},
 		TMinus: {PrecSum, binary},
 		TAster: {PrecMul, binary},

@@ -18,7 +18,10 @@ func main() {
 		scanf("%d", &a)
 		scanf("%d", &b)
 
-		printf("%d + %d = %d\n", a, b, a+b)
+		var c I32
+		c = a + b
+
+		printf("%d + %d = %d\n", a, b, c)
 		return 0
 	}
 	`)
