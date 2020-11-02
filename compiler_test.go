@@ -9,7 +9,12 @@ func spc(ch byte) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n'
 }
 
-func testCompile(t *testing.T, prog Program, ir string) {
+func testCompile(t *testing.T, code, ir string) {
+	prog, err := Parse(code)
+	if err != nil {
+		t.Fatal("Parse error:", err)
+	}
+
 	b := &strings.Builder{}
 	c := NewCompiler(b)
 	c.Compile(prog)
@@ -53,21 +58,19 @@ func testCompile(t *testing.T, prog Program, ir string) {
 	}
 }
 
-func testMainCompile(t *testing.T, stmts []Statement, ir string) {
-	ir = `export function w $main() { @start ` + ir + ` }`
-	testCompile(t, Program{Function{true, "main", nil, NamedTypeExpr("I32"), stmts}}, ir)
+func testMainCompile(t *testing.T, code, ir string) {
+	code = "pub fn main() I32 {\n" + code + "\n}\n"
+	ir = "export function w $main() {\n@start\n" + ir + "\n}\n"
+	testCompile(t, code, ir)
 }
 
 func TestReturn0(t *testing.T) {
-	/*
-		return 0
-	*/
-	testMainCompile(t, []Statement{ReturnStmt{IntegerExpr("0")}}, `ret 0`)
+	testMainCompile(t, `return 0`, `ret 0`)
 }
 
 // TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
-	/*
+	testMainCompile(t, `
 		4 + 2
 		4 - 2
 		4 * 2
@@ -81,19 +84,7 @@ func TestArithmetic(t *testing.T) {
 		4 >> 2
 
 		return 0
-	*/
-	bin := func(op BinaryOperator) Statement {
-		return ExprStmt{BinaryExpr{op, IntegerExpr("4"), IntegerExpr("2")}}
-	}
-	testMainCompile(t, []Statement{
-		bin(BOpAdd), bin(BOpSub),
-		bin(BOpMul), bin(BOpDiv), bin(BOpMod),
-
-		bin(BOpOr), bin(BOpXor), bin(BOpAnd),
-		bin(BOpShl), bin(BOpShr),
-
-		ReturnStmt{IntegerExpr("0")},
-	}, `
+	`, `
 		%t1 =l add 4, 2
 		%t2 =l sub 4, 2
 		%t3 =l mul 4, 2
@@ -111,23 +102,7 @@ func TestArithmetic(t *testing.T) {
 }
 
 func TestNestedArithmetic(t *testing.T) {
-	/*
-		return (1 + 10*2) * 2
-	*/
-	testMainCompile(t, []Statement{
-		ReturnStmt{
-			BinaryExpr{BOpMul,
-				BinaryExpr{BOpAdd,
-					IntegerExpr("1"),
-					BinaryExpr{BOpMul,
-						IntegerExpr("10"),
-						IntegerExpr("2"),
-					},
-				},
-				IntegerExpr("2"),
-			},
-		},
-	}, `
+	testMainCompile(t, `return (1 + 10*2) * 2`, `
 		%t1 =l mul 10, 2
 		%t2 =l add 1, %t1
 		%t3 =l mul %t2, 2
@@ -136,8 +111,8 @@ func TestNestedArithmetic(t *testing.T) {
 }
 
 func TestVariables(t *testing.T) {
-	/*
-		extern global I32
+	testCompile(t, `
+		var global I32
 		pub fn main() I32 {
 			var i, j I32
 			i = 7
@@ -145,18 +120,7 @@ func TestVariables(t *testing.T) {
 			i = i + j
 			return i + global
 		}
-	*/
-	testCompile(t, Program{
-		VarDecl{"global", NamedTypeExpr("I32")},
-		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
-			VarDecl{"i", NamedTypeExpr("I32")},
-			VarDecl{"j", NamedTypeExpr("I32")},
-			ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
-			ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
-			ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
-			ReturnStmt{BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("global")}},
-		}},
-	}, `
+	`, `
 		export function w $main() {
 		@start
 			%t1 =l alloc4 4
@@ -181,30 +145,17 @@ func TestVariables(t *testing.T) {
 }
 
 func TestSmallTypes(t *testing.T) {
-	/*
+	testMainCompile(t, `
 		var i, j I16
 		i = 7
 		j = 5
 		i = i + j
 
-		var k, l I8
+		var k, l U8
 		k = 7
 		l = 5
 		k = k + l
-	*/
-	testMainCompile(t, []Statement{
-		VarDecl{"i", NamedTypeExpr("I16")},
-		VarDecl{"j", NamedTypeExpr("I16")},
-		ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
-		ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
-		ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
-
-		VarDecl{"k", NamedTypeExpr("U8")},
-		VarDecl{"l", NamedTypeExpr("U8")},
-		ExprStmt{AssignExpr{VarExpr("k"), IntegerExpr("7")}},
-		ExprStmt{AssignExpr{VarExpr("l"), IntegerExpr("5")}},
-		ExprStmt{AssignExpr{VarExpr("k"), BinaryExpr{BOpAdd, VarExpr("k"), VarExpr("l")}}},
-	}, `
+	`, `
 		%t1 =l alloc4 2
 		storeh 0, %t1
 		%t2 =l alloc4 2
@@ -235,18 +186,12 @@ func TestSmallTypes(t *testing.T) {
 }
 
 func TestReferenceVariable(t *testing.T) {
-	/*
+	testMainCompile(t, `
 		var i I32
 		var p [I32]
 		p = &i
 		return 0
-	*/
-	testMainCompile(t, []Statement{
-		VarDecl{"i", NamedTypeExpr("I32")},
-		VarDecl{"j", PointerTypeExpr{NamedTypeExpr("I32")}},
-		ExprStmt{AssignExpr{VarExpr("j"), RefExpr{VarExpr("i")}}},
-		ReturnStmt{IntegerExpr("0")},
-	}, `
+	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1
 		%t2 =l alloc8 8
@@ -257,14 +202,10 @@ func TestReferenceVariable(t *testing.T) {
 }
 
 func TestDereferencePointer(t *testing.T) {
-	/*
+	testMainCompile(t, `
 		var p [I32]
 		return [p]
-	*/
-	testMainCompile(t, []Statement{
-		VarDecl{"p", PointerTypeExpr{NamedTypeExpr("I32")}},
-		ReturnStmt{DerefExpr{VarExpr("p")}},
-	}, `
+	`, `
 		%t1 =l alloc8 8
 		storel 0, %t1
 		%t2 =l loadl %t1
@@ -274,20 +215,13 @@ func TestDereferencePointer(t *testing.T) {
 }
 
 func TestFunctionCall(t *testing.T) {
-	/*
-		extern printi fn(I64)
+	testCompile(t, `
+		fn printi(i I64)
 		pub fn main() I32 {
 			printi(42)
 			return 0
 		}
-	*/
-	testCompile(t, Program{
-		VarDecl{"printi", FuncTypeExpr{[]TypeExpr{NamedTypeExpr("I64")}, nil}},
-		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
-			ExprStmt{CallExpr{VarExpr("printi"), []Expression{IntegerExpr("42")}}},
-			ReturnStmt{IntegerExpr("0")},
-		}},
-	}, `
+	`, `
 		export function w $main() {
 		@start
 			call $printi(l 42)
@@ -297,8 +231,8 @@ func TestFunctionCall(t *testing.T) {
 }
 
 func TestStringLiteral(t *testing.T) {
-	/*
-		extern puts fn([I8]) I32
+	testCompile(t, `
+		fn puts(s [I8]) I32
 		pub fn main() I32 {
 			puts("str0")
 			puts("str0")
@@ -308,22 +242,7 @@ func TestStringLiteral(t *testing.T) {
 			puts("str2")
 			return 0
 		}
-	*/
-	puts := func(s string) Statement {
-		return ExprStmt{CallExpr{VarExpr("puts"), []Expression{StringExpr(s)}}}
-	}
-	testCompile(t, Program{
-		VarDecl{"puts", FuncTypeExpr{[]TypeExpr{PointerTypeExpr{NamedTypeExpr("I8")}}, NamedTypeExpr("I32")}},
-		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
-			puts("str0"),
-			puts("str0"),
-			puts("str1"),
-			puts("str1"),
-			puts("str2"),
-			puts("str2"),
-			ReturnStmt{IntegerExpr("0")},
-		}},
-	}, `
+	`, `
 		export function w $main() {
 		@start
 			%t1 =w call $puts(l $str0)
