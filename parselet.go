@@ -29,7 +29,7 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 			tl = Function{pub, name, params, ret, body}
 		} else {
 			// No body, just a declaration
-			var paramTy []TypeExpr
+			paramTy := make([]TypeExpr, len(params))
 			for i, param := range params {
 				paramTy[i] = param.Ty
 			}
@@ -112,6 +112,7 @@ func init() {
 		},
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
+			p.require(TRSquare)
 			return PointerTypeExpr{to}
 		},
 		TKfn: func(p *parser, tok Token) TypeExpr {

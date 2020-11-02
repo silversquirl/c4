@@ -26,10 +26,11 @@ func Parse(code string) (prog Program, err error) {
 	p := parser{<-toks, toks}
 	defer func() {
 		switch e := recover().(type) {
+		case nil:
 		case string:
 			err = errors.New(e)
-		case error:
-			err = e
+		default:
+			panic(e)
 		}
 	}()
 	return p.parseProgram(), nil
