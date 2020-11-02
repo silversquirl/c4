@@ -285,6 +285,40 @@ func TestIfElse(t *testing.T) {
 	`)
 }
 
+func TestElseIf(t *testing.T) {
+	testMainCompile(t, `
+		if 1 {
+			return 0
+		} else if 2 {
+			return 1
+		} else if 3 {
+			return 2
+		} else {
+			return 3
+		}
+	`, `
+		jnz 1, @b1, @b2
+	@b1
+		ret 0
+		jmp @b3
+	@b2
+		jnz 2, @b4, @b5
+	@b4
+		ret 1
+		jmp @b6
+	@b5
+		jnz 3, @b7, @b8
+	@b7
+		ret 2
+		jmp @b9
+	@b8
+		ret 3
+	@b9
+	@b6
+	@b3
+	`)
+}
+
 func TestReferenceVariable(t *testing.T) {
 	testMainCompile(t, `
 		var i I32

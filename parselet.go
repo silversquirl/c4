@@ -75,13 +75,15 @@ func init() {
 			}
 
 			if p.accept(TKelse) {
-				p.require(TLBrace)
-				for l := p.list(TSemi, TRBrace); l.next(); {
-					i.Else = append(i.Else, p.parseStatement()...)
+				if p.peek() == TKif {
+					i.Else = p.parseStatement()
+				} else {
+					p.require(TLBrace)
+					for l := p.list(TSemi, TRBrace); l.next(); {
+						i.Else = append(i.Else, p.parseStatement()...)
+					}
 				}
 			}
-
-			// TODO: else if
 
 			return []Statement{i}
 		},
