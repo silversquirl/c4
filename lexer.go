@@ -63,6 +63,7 @@ func parseKeyword(tok Token) Token {
 	return tok
 }
 func parseString(tok Token) Token {
+	tok.S = tok.S[1 : len(tok.S)-1]
 	return tok
 }
 func parseInt(tok Token) Token {

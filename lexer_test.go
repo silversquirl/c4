@@ -48,7 +48,7 @@ func TestTokenize(t *testing.T) {
 		{TIdent, "elseexternfnforifpubreturntypevar"}, {TIdent, "fooBar"}, {TIdent, "_"}, {TIdent, "_foo"},
 		{TIdent, "foo_"}, {TType, "FooBar"},
 
-		{TString, `""`}, {TString, `"hello"`}, {TInteger, "0"}, {TInteger, "1"},
+		{TString, ""}, {TString, "hello"}, {TInteger, "0"}, {TInteger, "1"},
 		{TInteger, "-1"}, {TFloat, "0."}, {TFloat, ".0"}, {TFloat, "0.0"},
 		{TFloat, "1.1"}, {TFloat, "-1.1"},
 	})
@@ -95,7 +95,7 @@ func TestAutoSemi(t *testing.T) {
 		// Non-auto-semi tokens
 		{TRParen, ")"}, {TSemi, "\n"}, {TRSquare, "]"}, {TSemi, "\n"},
 		{TRBrace, "}"}, {TSemi, "\n"}, {TIdent, "foo"}, {TSemi, "\n"},
-		{TType, "Foo"}, {TSemi, "\n"}, {TString, `""`}, {TSemi, "\n"},
+		{TType, "Foo"}, {TSemi, "\n"}, {TString, ""}, {TSemi, "\n"},
 		{TInteger, "0"}, {TSemi, "\n"}, {TFloat, "0."}, {TSemi, "\n"},
 	})
 }
