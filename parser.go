@@ -41,6 +41,10 @@ type parser struct {
 	toks <-chan Token
 }
 
+func (p *parser) errExpect(what string) {
+	panic("Expected " + what + "; got " + p.peek().String())
+}
+
 func (p *parser) peek() TokenType {
 	return p.tok.Ty
 }
@@ -66,23 +70,23 @@ func (p *parser) require(types ...TokenType) Token {
 		return tok
 	}
 
-	msg := &strings.Builder{}
-	msg.WriteString("Invalid token: expected ")
+	var what string
 	if len(types) == 1 {
-		msg.WriteString(types[0].String())
+		what = types[0].String()
 	} else {
-		msg.WriteString("one of")
+		b := &strings.Builder{}
+		b.WriteString("one of")
 		for i, ty := range types {
 			if i > 0 {
-				msg.WriteByte(',')
+				b.WriteByte(',')
 			}
-			msg.WriteByte(' ')
-			msg.WriteString(ty.String())
+			b.WriteByte(' ')
+			b.WriteString(ty.String())
 		}
+		what = b.String()
 	}
-	msg.WriteString("; got ")
-	msg.WriteString(tok.Ty.String())
-	panic(msg.String())
+	p.errExpect(what)
+	panic("unreachable")
 }
 
 type listParser struct {
@@ -110,6 +114,7 @@ func (p *parser) list(sep, end TokenType) listParser {
 func (p *parser) parseProgram() (prog Program) {
 	for p.peek() != TEOF {
 		prog = append(prog, p.parseToplevel()...)
+		p.require(TSemi, TEOF)
 	}
 	return prog
 }
@@ -122,12 +127,11 @@ func (p *parser) parseToplevel() []Toplevel {
 		p.next()
 	}
 
-	tok := p.next()
-	pl, ok := toplevelParselets[tok.Ty]
+	pl, ok := toplevelParselets[p.peek()]
 	if !ok {
-		panic("Expected toplevel construct, got " + tok.Ty.String())
+		p.errExpect("toplevel construct")
 	}
-	return pl(p, tok, pub)
+	return pl(p, p.next(), pub)
 }
 
 func (p *parser) parseStatement() []Statement {
@@ -140,12 +144,11 @@ func (p *parser) parseStatement() []Statement {
 }
 
 func (p *parser) parseExpression(prec int) Expression {
-	tok := p.next()
-	pl, ok := prefixExprParselets[tok.Ty]
+	pl, ok := prefixExprParselets[p.peek()]
 	if !ok {
-		panic("Expected expression, got " + tok.Ty.String())
+		p.errExpect("expression")
 	}
-	left := pl.fun(pl.prec, p, tok)
+	left := pl.fun(pl.prec, p, p.next())
 
 	for {
 		pl := exprParselets[p.peek()]
@@ -167,7 +170,11 @@ func (p *parser) parseVarTypes() []VarDecl {
 		}
 		names = append(names, p.next().S)
 	}
+
 	ty := p.parseType()
+	if ty == nil {
+		p.errExpect("type")
+	}
 
 	decls := make([]VarDecl, len(names))
 	for i, name := range names {
@@ -176,15 +183,10 @@ func (p *parser) parseVarTypes() []VarDecl {
 	return decls
 }
 
-func (p *parser) canParseType() bool {
-	_, ok := typeParselets[p.peek()]
-	return ok
-}
 func (p *parser) parseType() TypeExpr {
-	tok := p.next()
-	pl, ok := typeParselets[tok.Ty]
+	pl, ok := typeParselets[p.peek()]
 	if !ok {
-		panic("Expected type, got " + tok.Ty.String())
+		return nil
 	}
-	return pl(p, tok)
+	return pl(p, p.next())
 }

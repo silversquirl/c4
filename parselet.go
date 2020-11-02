@@ -27,7 +27,6 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 			}
 			tl = VarDecl{name, FuncTypeExpr{paramTy, ret}}
 		}
-		p.require(TSemi)
 		return []Toplevel{tl}
 	},
 	TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
@@ -151,6 +150,9 @@ func init() {
 		},
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
+			if to == nil {
+				p.errExpect("type")
+			}
 			p.require(TRSquare)
 			return PointerTypeExpr{to}
 		},
@@ -158,13 +160,14 @@ func init() {
 			t := FuncTypeExpr{}
 			p.require(TLParen)
 			for l := p.list(TComma, TRParen); l.next(); {
-				// TODO: allow naming args
-				t.Param = append(t.Param, p.parseType())
+				p.accept(TIdent)
+				ty := p.parseType()
+				if ty == nil {
+					p.errExpect("type")
+				}
+				t.Param = append(t.Param, ty)
 			}
-			// TODO: some kind of "try" system to handle this in future
-			if p.canParseType() {
-				t.Ret = p.parseType()
-			}
+			t.Ret = p.parseType()
 			return t
 		},
 	}
