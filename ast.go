@@ -357,6 +357,8 @@ const (
 	BOpAnd
 	BOpShl
 	BOpShr
+
+	BinaryOperatorMax
 )
 
 type IntegerExpr string
@@ -369,6 +371,18 @@ func (e IntegerExpr) Code() string {
 }
 func (e IntegerExpr) GenIR(c *Compiler) Operand {
 	return IRInteger(e)
+}
+
+type FloatExpr string
+
+func (_ FloatExpr) TypeOf(c *Compiler) Type {
+	return FloatLitType{}
+}
+func (e FloatExpr) Code() string {
+	return string(e)
+}
+func (e FloatExpr) GenIR(c *Compiler) Operand {
+	panic("TODO")
 }
 
 type StringExpr string
