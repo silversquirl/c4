@@ -100,5 +100,5 @@ func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {
 	if fun.Ret != nil {
 		ret = fun.Ret.Get(c)
 	}
-	return FuncType{params, ret}
+	return FuncType{fun.Var, params, ret}
 }

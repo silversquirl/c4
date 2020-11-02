@@ -1,7 +1,9 @@
 package main
 
-var toplevelParselets = map[TokenType]toplevelParselet{
-	TKfn: func(p *parser, tok Token, pub bool) []Toplevel {
+var toplevelParselets map[TokenType]toplevelParselet
+
+func init() {
+	fn := func(p *parser, tok Token, pub bool, variadic bool) []Toplevel {
 		// Parse function signature
 		name := p.require(TIdent).S
 		p.require(TLParen)
@@ -12,7 +14,7 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 		ret := p.parseType()
 
 		var tl Toplevel
-		if p.accept(TLBrace) {
+		if !variadic && p.accept(TLBrace) {
 			// Parse function body
 			var body []Statement
 			for l := p.list(TSemi, TRBrace); l.next(); {
@@ -25,18 +27,27 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 			for i, param := range params {
 				paramTy[i] = param.Ty
 			}
-			tl = VarDecl{name, FuncTypeExpr{paramTy, ret}}
+			tl = VarDecl{name, FuncTypeExpr{variadic, paramTy, ret}}
 		}
 		return []Toplevel{tl}
-	},
-	TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
-		vds := p.parseVarTypes()
-		tls := make([]Toplevel, len(vds))
-		for i, vd := range vds {
-			tls[i] = vd
-		}
-		return tls
-	},
+	}
+
+	toplevelParselets = map[TokenType]toplevelParselet{
+		TKfn: func(p *parser, tok Token, pub bool) []Toplevel {
+			return fn(p, tok, pub, false)
+		},
+		TKvariadic: func(p *parser, tok Token, pub bool) []Toplevel {
+			return fn(p, p.require(TKfn), pub, true)
+		},
+		TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
+			vds := p.parseVarTypes()
+			tls := make([]Toplevel, len(vds))
+			for i, vd := range vds {
+				tls[i] = vd
+			}
+			return tls
+		},
+	}
 }
 
 var statementParselets = map[TokenType]statementParselet{

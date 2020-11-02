@@ -236,15 +236,16 @@ const (
 
 	// Keywords
 	TKeywordStart
-	TKelse   // 'else'
-	TKextern // 'extern'
-	TKfn     // 'fn'
-	TKfor    // 'for'
-	TKif     // 'if'
-	TKpub    // 'pub'
-	TKreturn // 'return'
-	TKtype   // 'type'
-	TKvar    // 'var'
+	TKelse     // 'else'
+	TKextern   // 'extern'
+	TKfn       // 'fn'
+	TKfor      // 'for'
+	TKif       // 'if'
+	TKpub      // 'pub'
+	TKreturn   // 'return'
+	TKtype     // 'type'
+	TKvar      // 'var'
+	TKvariadic // 'variadic'
 	TKeywordEnd
 )
 

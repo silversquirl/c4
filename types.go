@@ -242,6 +242,7 @@ func (_ PointerType) IRTypeDecl() string {
 }
 
 type FuncType struct {
+	Var   bool // true if the function uses C-style varags
 	Param []ConcreteType
 	Ret   ConcreteType
 }

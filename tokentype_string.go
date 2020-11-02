@@ -70,12 +70,13 @@ func _() {
 	_ = x[TKreturn-59]
 	_ = x[TKtype-60]
 	_ = x[TKvar-61]
-	_ = x[TKeywordEnd-62]
+	_ = x[TKvariadic-62]
+	_ = x[TKeywordEnd-63]
 }
 
-const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''pub''return''type''var'TKeywordEnd"
+const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''pub''return''type''var''variadic'TKeywordEnd"
 
-var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 108, 123, 127, 131, 135, 139, 143, 147, 151, 155, 160, 165, 170, 175, 179, 183, 187, 191, 195, 199, 203, 207, 210, 213, 216, 219, 222, 225, 228, 231, 234, 237, 240, 243, 256, 267, 280, 286, 294, 298, 303, 307, 312, 320, 326, 331, 342}
+var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 108, 123, 127, 131, 135, 139, 143, 147, 151, 155, 160, 165, 170, 175, 179, 183, 187, 191, 195, 199, 203, 207, 210, 213, 216, 219, 222, 225, 228, 231, 234, 237, 240, 243, 256, 267, 280, 286, 294, 298, 303, 307, 312, 320, 326, 331, 341, 352}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {
