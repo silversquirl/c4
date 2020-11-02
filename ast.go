@@ -8,14 +8,8 @@ import (
 
 type Program []Toplevel
 
-func (p Program) GenIR(c *Compiler) {
-	for _, f := range p {
-		f.ToplevelIR(c)
-	}
-}
-
 type Toplevel interface {
-	ToplevelIR(c *Compiler)
+	GenToplevel(c *Compiler)
 }
 
 type Function struct {
@@ -26,24 +20,9 @@ type Function struct {
 	Code  []Statement
 }
 
-func (f Function) ToplevelIR(c *Compiler) {
-	params := make([]IRParam, len(f.Param))
-	for i, param := range f.Param {
-		params[i].Name = param.Name
-		params[i].Ty = param.Ty.Get(c).IRTypeName()
-	}
-
-	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName())
-	defer c.EndFunction()
-
-	for _, stmt := range f.Code {
-		stmt.GenIR(c)
-	}
-}
-
 type Statement interface {
 	Code() string
-	GenIR(c *Compiler)
+	GenStatement(c *Compiler)
 }
 
 type VarDecl struct {
@@ -54,12 +33,6 @@ type VarDecl struct {
 func (d VarDecl) Code() string {
 	return "var " + d.Name + " " + d.Ty.Code()
 }
-func (d VarDecl) GenIR(c *Compiler) {
-	c.DeclareLocal(d.Name, d.Ty.Get(c))
-}
-func (d VarDecl) ToplevelIR(c *Compiler) {
-	c.DeclareGlobal(d.Name, d.Ty.Get(c))
-}
 
 type ReturnStmt struct {
 	Value Expression
@@ -68,21 +41,13 @@ type ReturnStmt struct {
 func (r ReturnStmt) Code() string {
 	return "return " + r.Value.Code()
 }
-func (r ReturnStmt) GenIR(c *Compiler) {
-	v := r.Value.GenIR(c)
-	c.Insn(0, 0, "ret", v)
-}
 
 type ExprStmt struct{ Expression }
 
-func (e ExprStmt) GenIR(c *Compiler) {
-	e.Expression.GenIR(c)
-}
-
 type Expression interface {
-	TypeOf(c *Compiler) Type
 	Code() string
-	GenIR(c *Compiler) Operand
+	TypeOf(c *Compiler) Type
+	GenExpression(c *Compiler) Operand
 }
 
 type AssignExpr struct {
@@ -90,6 +55,9 @@ type AssignExpr struct {
 	R Expression
 }
 
+func (e AssignExpr) Code() string {
+	return e.L.Code() + " = " + e.R.Code()
+}
 func (e AssignExpr) TypeOf(c *Compiler) Type {
 	ltyp, ok := e.L.TypeOf(c).(ConcreteType)
 	if !ok {
@@ -100,19 +68,6 @@ func (e AssignExpr) TypeOf(c *Compiler) Type {
 		panic("Operands of assignment are incompatible")
 	}
 	return ltyp
-}
-
-func (e AssignExpr) Code() string {
-	return e.L.Code() + " = " + e.R.Code()
-}
-
-func (e AssignExpr) GenIR(c *Compiler) Operand {
-	t := e.TypeOf(c).(ConcreteType)
-	l := e.L.PtrTo(c)
-	r := e.R.GenIR(c)
-	// TODO: make extensible
-	c.Insn(0, 0, "store"+t.IRTypeName(), r, l)
-	return l
 }
 
 type CallExpr struct {
@@ -140,57 +95,10 @@ func (e CallExpr) Code() string {
 	}
 	return e.Func.Code() + "(" + strings.Join(args, ", ") + ")"
 }
-func (e CallExpr) GenIR(c *Compiler) Operand {
-	t, ptr := e.typeOf(c)
-	var f Operand
-	if ptr {
-		f = e.Func.GenIR(c)
-	} else {
-		f = e.Func.(LValue).PtrTo(c)
-	}
-
-	call := CallOperand{f, make([]TypedOperand, len(e.Args))}
-	for i, arg := range e.Args {
-		// TODO: type-check arguments
-		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName()
-		call.Args[i].Op = arg.GenIR(c)
-	}
-
-	if t.Ret == nil {
-		c.Insn(0, 0, "call", call)
-		return nil
-	} else {
-		v := c.Temporary()
-		c.Insn(v, t.Ret.IRBaseTypeName(), "call", call)
-		return v
-	}
-}
 
 type LValue interface {
 	Expression
-	PtrTo(c *Compiler) Operand
-}
-
-func genLValueIR(lv LValue, c *Compiler) Operand {
-	ty, ok := lv.TypeOf(c).(NumericType)
-	if !ok {
-		panic("Attempted load of non-numeric type")
-	}
-
-	ptr := lv.PtrTo(c)
-	op := "load"
-	if ty.IRTypeName() != string(ty.IRBaseTypeName()) {
-		if ty.(NumericType).Signed() {
-			op += "s"
-		} else {
-			op += "u"
-		}
-	}
-	op += ty.IRTypeName()
-
-	tmp := c.Temporary()
-	c.Insn(tmp, ty.IRBaseTypeName(), op, ptr)
-	return tmp
+	GenPointer(c *Compiler) Operand
 }
 
 type VarExpr string
@@ -201,12 +109,6 @@ func (e VarExpr) TypeOf(c *Compiler) Type {
 func (e VarExpr) Code() string {
 	return string(e)
 }
-func (e VarExpr) GenIR(c *Compiler) Operand {
-	return genLValueIR(e, c)
-}
-func (e VarExpr) PtrTo(c *Compiler) Operand {
-	return c.Variable(string(e)).Loc
-}
 
 type RefExpr struct{ V LValue }
 
@@ -215,9 +117,6 @@ func (e RefExpr) TypeOf(c *Compiler) Type {
 }
 func (e RefExpr) Code() string {
 	return "&" + e.V.Code()
-}
-func (e RefExpr) GenIR(c *Compiler) Operand {
-	return e.V.PtrTo(c)
 }
 
 type DerefExpr struct{ V Expression }
@@ -231,12 +130,6 @@ func (e DerefExpr) TypeOf(c *Compiler) Type {
 }
 func (e DerefExpr) Code() string {
 	return "[" + e.V.Code() + "]"
-}
-func (e DerefExpr) GenIR(c *Compiler) Operand {
-	return genLValueIR(e, c)
-}
-func (e DerefExpr) PtrTo(c *Compiler) Operand {
-	return e.V.GenIR(c)
 }
 
 type BinaryExpr struct {
@@ -268,15 +161,6 @@ func (e BinaryExpr) Code() string {
 	return fmt.Sprintf("(%s %s %s)", e.L.Code(), e.Op.Operator(), e.R.Code())
 }
 
-func (e BinaryExpr) GenIR(c *Compiler) Operand {
-	t := e.TypeOf(c).(NumericType)
-	l := e.L.GenIR(c)
-	r := e.R.GenIR(c)
-	v := c.Temporary()
-	c.Insn(v, t.IRBaseTypeName(), e.Op.Instruction(t), l, r)
-	return v
-}
-
 type BinaryOperator int
 
 func (op BinaryOperator) Operator() string {
@@ -306,45 +190,6 @@ func (op BinaryOperator) Operator() string {
 	panic("Invalid binary operator")
 }
 
-func (op BinaryOperator) Instruction(typ NumericType) string {
-	switch op {
-	case BOpAdd:
-		return "add"
-	case BOpSub:
-		return "sub"
-	case BOpMul:
-		return "mul"
-	case BOpDiv:
-		if typ.Signed() {
-			return "div"
-		} else {
-			return "udiv"
-		}
-	case BOpMod:
-		if typ.Signed() {
-			return "rem"
-		} else {
-			return "urem"
-		}
-
-	case BOpOr:
-		return "or"
-	case BOpXor:
-		return "xor"
-	case BOpAnd:
-		return "and"
-	case BOpShl:
-		return "shl"
-	case BOpShr:
-		if typ.Signed() {
-			return "sar"
-		} else {
-			return "shr"
-		}
-	}
-	panic("Invalid binary operator")
-}
-
 const (
 	BOpAdd BinaryOperator = iota
 	BOpSub
@@ -369,9 +214,6 @@ func (_ IntegerExpr) TypeOf(c *Compiler) Type {
 func (e IntegerExpr) Code() string {
 	return string(e)
 }
-func (e IntegerExpr) GenIR(c *Compiler) Operand {
-	return IRInteger(e)
-}
 
 type FloatExpr string
 
@@ -380,9 +222,6 @@ func (_ FloatExpr) TypeOf(c *Compiler) Type {
 }
 func (e FloatExpr) Code() string {
 	return string(e)
-}
-func (e FloatExpr) GenIR(c *Compiler) Operand {
-	panic("TODO")
 }
 
 type StringExpr string
@@ -414,9 +253,6 @@ func (e StringExpr) Code() string {
 	}
 	b.WriteRune('"')
 	return b.String()
-}
-func (e StringExpr) GenIR(c *Compiler) Operand {
-	return c.String(string(e))
 }
 
 type TypeExpr interface {

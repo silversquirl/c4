@@ -42,7 +42,7 @@ func NewCompiler(w io.Writer) *Compiler {
 }
 
 func (c *Compiler) Compile(prog Program) {
-	prog.GenIR(c)
+	prog.GenProgram(c)
 	c.Finish()
 }
 
