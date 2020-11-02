@@ -37,35 +37,12 @@ func (e DerefExpr) Format() string {
 	return "[" + e.V.Format() + "]"
 }
 
+func (e PrefixExpr) Format() string {
+	return e.Op.String() + e.V.Format()
+}
 func (e BinaryExpr) Format() string {
 	// TODO: smarter spacing/parenthesizing
-	return fmt.Sprintf("(%s %s %s)", e.L.Format(), e.Op.Operator(), e.R.Format())
-}
-func (op BinaryOperator) Operator() string {
-	switch op {
-	case BOpAdd:
-		return "+"
-	case BOpSub:
-		return "-"
-	case BOpMul:
-		return "*"
-	case BOpDiv:
-		return "/"
-	case BOpMod:
-		return "%"
-
-	case BOpOr:
-		return "|"
-	case BOpXor:
-		return "^"
-	case BOpAnd:
-		return "&"
-	case BOpShl:
-		return "<<"
-	case BOpShr:
-		return ">>"
-	}
-	panic("Invalid binary operator")
+	return fmt.Sprintf("(%s %s %s)", e.L.Format(), e.Op, e.R.Format())
 }
 
 func (e IntegerExpr) Format() string {

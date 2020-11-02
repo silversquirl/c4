@@ -57,6 +57,21 @@ var statementParselets = map[TokenType]statementParselet{
 var prefixExprParselets map[TokenType]prefixExprParselet
 
 func init() {
+	prefOpMap := map[string]PrefixOperator{}
+	for op := PrefixOperator(1); op < PrefixOperatorMax; op++ {
+		prefOpMap[op.String()] = op
+	}
+
+	prefix := func(prec int, p *parser, tok Token) Expression {
+		op, ok := prefOpMap[tok.S]
+		if !ok {
+			panic("Invalid prefix operator: " + tok.S)
+		}
+
+		v := p.parseExpression(prec)
+		return PrefixExpr{op, v}
+	}
+
 	prefixExprParselets = map[TokenType]prefixExprParselet{
 		TIdent: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
 			return VarExpr(tok.S)
@@ -89,6 +104,11 @@ func init() {
 			}
 			return RefExpr{v}
 		}},
+
+		TExcl:  {PrecPrefix, prefix},
+		TCaret: {PrecPrefix, prefix},
+		TMinus: {PrecPrefix, prefix},
+		TPlus:  {PrecPrefix, prefix},
 	}
 }
 
@@ -96,8 +116,8 @@ var exprParselets map[TokenType]exprParselet
 
 func init() {
 	binOpMap := map[string]BinaryOperator{}
-	for op := BinaryOperator(0); op < BinaryOperatorMax; op++ {
-		binOpMap[op.Operator()] = op
+	for op := BinaryOperator(1); op < BinaryOperatorMax; op++ {
+		binOpMap[op.String()] = op
 	}
 
 	binary := func(prec int, p *parser, tok Token, left Expression) Expression {

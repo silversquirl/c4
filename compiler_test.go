@@ -68,6 +68,24 @@ func TestReturn0(t *testing.T) {
 	testMainCompile(t, `return 0`, `ret 0`)
 }
 
+func TestPrefixExpr(t *testing.T) {
+	testMainCompile(t, `
+		!3
+		^3
+		-(3)
+		+(3)
+
+		return 0
+	`, `
+		%t1 =l ceql 0, 3
+		%t2 =l xor -1, 3
+		%t3 =l sub 0, 3
+		%t4 =l copy 3
+
+		ret 0
+	`)
+}
+
 // TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
 	testMainCompile(t, `

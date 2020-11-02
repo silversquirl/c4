@@ -42,6 +42,16 @@ func (e DerefExpr) TypeOf(c *Compiler) Type {
 	}
 }
 
+// FIXME: not and inv require integer types
+func (e PrefixExpr) TypeOf(c *Compiler) Type {
+	vty := e.V.TypeOf(c).Concrete()
+	if ty, ok := vty.(NumericType); !ok {
+		panic("Operand of prefix expression is of non-numeric type")
+	} else {
+		return ty
+	}
+}
+
 // FIXME: all operators other than add, sub, div and mul require integer types
 // FIXME: lsh and rsh require their second argument to be an I32 or smaller
 func (e BinaryExpr) TypeOf(c *Compiler) Type {

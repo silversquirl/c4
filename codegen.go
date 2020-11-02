@@ -112,6 +112,32 @@ func (e DerefExpr) GenPointer(c *Compiler) Operand {
 	return e.V.GenExpression(c)
 }
 
+func (e PrefixExpr) GenExpression(c *Compiler) Operand {
+	t := e.TypeOf(c).(NumericType)
+	v := e.V.GenExpression(c)
+	tmp := c.Temporary()
+	op, arg0 := e.Op.Instruction(t)
+	if arg0 == nil {
+		c.Insn(tmp, t.IRBaseTypeName(), op, v)
+	} else {
+		c.Insn(tmp, t.IRBaseTypeName(), op, arg0, v)
+	}
+	return tmp
+}
+func (op PrefixOperator) Instruction(ty NumericType) (string, Operand) {
+	switch op {
+	case PrefNot:
+		return "ceq" + ty.IRTypeName(), IRInt(0)
+	case PrefInv:
+		return "xor", IRInt(-1)
+	case PrefNeg:
+		return "sub", IRInt(0)
+	case PrefPos:
+		return "copy", nil
+	}
+	panic("Invalid prefix operator")
+}
+
 func (e BinaryExpr) GenExpression(c *Compiler) Operand {
 	t := e.TypeOf(c).(NumericType)
 	l := e.L.GenExpression(c)
@@ -122,34 +148,34 @@ func (e BinaryExpr) GenExpression(c *Compiler) Operand {
 }
 func (op BinaryOperator) Instruction(typ NumericType) string {
 	switch op {
-	case BOpAdd:
+	case BinAdd:
 		return "add"
-	case BOpSub:
+	case BinSub:
 		return "sub"
-	case BOpMul:
+	case BinMul:
 		return "mul"
-	case BOpDiv:
+	case BinDiv:
 		if typ.Signed() {
 			return "div"
 		} else {
 			return "udiv"
 		}
-	case BOpMod:
+	case BinMod:
 		if typ.Signed() {
 			return "rem"
 		} else {
 			return "urem"
 		}
 
-	case BOpOr:
+	case BinOr:
 		return "or"
-	case BOpXor:
+	case BinXor:
 		return "xor"
-	case BOpAnd:
+	case BinAnd:
 		return "and"
-	case BOpShl:
+	case BinShl:
 		return "shl"
-	case BOpShr:
+	case BinShr:
 		if typ.Signed() {
 			return "sar"
 		} else {

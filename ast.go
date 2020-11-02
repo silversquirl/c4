@@ -29,12 +29,19 @@ type ReturnStmt struct {
 }
 
 type ExprStmt struct{ Expression }
-
 type Expression interface {
 	Format() string
 	TypeOf(c *Compiler) Type
 	GenExpression(c *Compiler) Operand
 }
+type LValue interface {
+	Expression
+	GenPointer(c *Compiler) Operand
+}
+
+type VarExpr string
+type RefExpr struct{ V LValue }
+type DerefExpr struct{ V Expression }
 
 type AssignExpr struct {
 	L LValue
@@ -46,37 +53,17 @@ type CallExpr struct {
 	Args []Expression
 }
 
-type LValue interface {
-	Expression
-	GenPointer(c *Compiler) Operand
+type PrefixExpr struct {
+	Op PrefixOperator
+	V  Expression
 }
-
-type VarExpr string
-type RefExpr struct{ V LValue }
-type DerefExpr struct{ V Expression }
+type PrefixOperator int
 
 type BinaryExpr struct {
 	Op   BinaryOperator
 	L, R Expression
 }
-
 type BinaryOperator int
-
-const (
-	BOpAdd BinaryOperator = iota
-	BOpSub
-	BOpMul
-	BOpDiv
-	BOpMod
-
-	BOpOr
-	BOpXor
-	BOpAnd
-	BOpShl
-	BOpShr
-
-	BinaryOperatorMax
-)
 
 type IntegerExpr string
 type FloatExpr string
