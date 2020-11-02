@@ -1,10 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func main() {
-	prog := `
+	prog, err := Parse(`
 	// Very amazing program to sum two inputted numbers
+	fn puts(str [I8]) I32
+	fn scanf(fmt [I8], i [I32]) I32
+	fn printf(fmt [I8], a, b, c I32) I32
 	pub fn main() I32 {
 		puts("Enter two numbers:")
 
@@ -15,11 +21,11 @@ func main() {
 		printf("%d + %d = %d\n", a, b, a+b)
 		return 0
 	}
-	`
+	`)
 
-	toks := make(chan Token)
-	go Tokenize(prog, toks)
-	for tok := range toks {
-		fmt.Println(tok)
+	if err != nil {
+		fmt.Println("Parse error:", err)
 	}
+
+	NewCompiler(os.Stdout).Compile(prog)
 }
