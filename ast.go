@@ -22,7 +22,7 @@ type Function struct {
 	Pub   bool
 	Name  string
 	Param []VarDecl
-	Ret   ConcreteType
+	Ret   TypeExpr
 	Code  []Statement
 }
 
@@ -30,10 +30,10 @@ func (f Function) ToplevelIR(c *Compiler) {
 	params := make([]IRParam, len(f.Param))
 	for i, param := range f.Param {
 		params[i].Name = param.Name
-		params[i].Ty = param.Ty.IRTypeName()
+		params[i].Ty = param.Ty.Get(c).IRTypeName()
 	}
 
-	c.StartFunction(f.Pub, f.Name, params, f.Ret.IRTypeName())
+	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName())
 	defer c.EndFunction()
 
 	for _, stmt := range f.Code {
@@ -48,17 +48,17 @@ type Statement interface {
 
 type VarDecl struct {
 	Name string
-	Ty   ConcreteType
+	Ty   TypeExpr
 }
 
 func (d VarDecl) Code() string {
 	return "var " + d.Name + " " + d.Ty.Code()
 }
 func (d VarDecl) GenIR(c *Compiler) {
-	c.DeclareLocal(d.Name, d.Ty)
+	c.DeclareLocal(d.Name, d.Ty.Get(c))
 }
 func (d VarDecl) ToplevelIR(c *Compiler) {
-	c.DeclareGlobal(d.Name, d.Ty)
+	c.DeclareGlobal(d.Name, d.Ty.Get(c))
 }
 
 type ReturnStmt struct {
@@ -211,7 +211,7 @@ func (e VarExpr) PtrTo(c *Compiler) Operand {
 type RefExpr struct{ V LValue }
 
 func (e RefExpr) TypeOf(c *Compiler) Type {
-	return PointerTo(e.V.TypeOf(c).(ConcreteType))
+	return PointerType{e.V.TypeOf(c).(ConcreteType)}
 }
 func (e RefExpr) Code() string {
 	return "&" + e.V.Code()
@@ -375,7 +375,7 @@ type StringExpr string
 
 func (_ StringExpr) TypeOf(c *Compiler) Type {
 	// TODO: immutable types
-	return PointerTo(TypeI8)
+	return PointerType{TypeI8}
 }
 func (e StringExpr) Code() string {
 	b := &strings.Builder{}
@@ -403,4 +403,52 @@ func (e StringExpr) Code() string {
 }
 func (e StringExpr) GenIR(c *Compiler) Operand {
 	return c.String(string(e))
+}
+
+type TypeExpr interface {
+	Get(c *Compiler) ConcreteType
+	Code() string
+}
+
+type NamedTypeExpr string
+type PointerTypeExpr struct{ To TypeExpr }
+type FuncTypeExpr struct {
+	Param []TypeExpr
+	Ret   TypeExpr
+}
+
+func (name NamedTypeExpr) Get(c *Compiler) ConcreteType {
+	return c.Type(string(name))
+}
+func (ptr PointerTypeExpr) Get(c *Compiler) ConcreteType {
+	return PointerType{ptr.To.Get(c)}
+}
+func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {
+	params := make([]ConcreteType, len(fun.Param))
+	for i, param := range fun.Param {
+		params[i] = param.Get(c)
+	}
+	var ret ConcreteType
+	if fun.Ret != nil {
+		ret = fun.Ret.Get(c)
+	}
+	return FuncType{params, ret}
+}
+
+func (name NamedTypeExpr) Code() string {
+	return string(name)
+}
+func (ptr PointerTypeExpr) Code() string {
+	return "[" + ptr.To.Code() + "]"
+}
+func (fun FuncTypeExpr) Code() string {
+	params := make([]string, len(fun.Param))
+	for i, param := range fun.Param {
+		params[i] = param.Code()
+	}
+	var ret string
+	if fun.Ret != nil {
+		ret = " " + fun.Ret.Code()
+	}
+	return "fn(" + strings.Join(params, ", ") + ")" + ret
 }

@@ -10,6 +10,7 @@ import (
 type Compiler struct {
 	w    io.Writer
 	temp Temporary
+	typs map[string]ConcreteType
 	vars map[string]Variable
 	strs []IRString
 	strM map[string]int // Map from string to index of entry in strs
@@ -18,6 +19,22 @@ type Compiler struct {
 func NewCompiler(w io.Writer) *Compiler {
 	return &Compiler{
 		w, 0,
+		map[string]ConcreteType{
+			"I64": TypeI64,
+			"I32": TypeI32,
+			"I16": TypeI16,
+			"I8":  TypeI8,
+
+			"U64": TypeU64,
+			"U32": TypeU32,
+			"U16": TypeU16,
+			"U8":  TypeU8,
+
+			"F64": TypeF64,
+			"F32": TypeF32,
+
+			"Bool": TypeBool,
+		},
 		make(map[string]Variable),
 		nil,
 		make(map[string]int),
@@ -85,6 +102,18 @@ type IRParam struct {
 func (c *Compiler) Temporary() Temporary {
 	c.temp++
 	return c.temp
+}
+
+func (c *Compiler) DefineType(name string, typ ConcreteType) NamedType {
+	if _, ok := c.typs[name]; ok {
+		panic("Type already exists")
+	}
+	ty := NamedType{typ, name}
+	c.typs[name] = ty
+	return ty
+}
+func (c *Compiler) Type(name string) ConcreteType {
+	return c.typs[name]
 }
 
 func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {

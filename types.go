@@ -212,10 +212,6 @@ type PointerType struct {
 	To ConcreteType
 }
 
-func PointerTo(to ConcreteType) PointerType {
-	return PointerType{To: to}
-}
-
 func (a PointerType) Equals(other Type) bool {
 	b, ok := other.(PointerType)
 	return ok && a.To.Equals(b.To)
@@ -292,4 +288,9 @@ func (_ FuncType) IRBaseTypeName() rune {
 }
 func (_ FuncType) IRTypeDecl() string {
 	return ""
+}
+
+type NamedType struct {
+	ConcreteType
+	Name string
 }

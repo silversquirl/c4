@@ -55,7 +55,7 @@ func testCompile(t *testing.T, prog Program, ir string) {
 
 func testMainCompile(t *testing.T, stmts []Statement, ir string) {
 	ir = `export function w $main() { @start ` + ir + ` }`
-	testCompile(t, Program{Function{true, "main", nil, TypeI32, stmts}}, ir)
+	testCompile(t, Program{Function{true, "main", nil, NamedTypeExpr("I32"), stmts}}, ir)
 }
 
 func TestReturn0(t *testing.T) {
@@ -147,10 +147,10 @@ func TestVariables(t *testing.T) {
 		}
 	*/
 	testCompile(t, Program{
-		VarDecl{"global", TypeI32},
-		Function{true, "main", nil, TypeI32, []Statement{
-			VarDecl{"i", TypeI32},
-			VarDecl{"j", TypeI32},
+		VarDecl{"global", NamedTypeExpr("I32")},
+		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
+			VarDecl{"i", NamedTypeExpr("I32")},
+			VarDecl{"j", NamedTypeExpr("I32")},
 			ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
 			ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
 			ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
@@ -190,14 +190,14 @@ func TestSmallTypes(t *testing.T) {
 		k = k + l
 	*/
 	testMainCompile(t, []Statement{
-		VarDecl{"i", TypeI16},
-		VarDecl{"j", TypeI16},
+		VarDecl{"i", NamedTypeExpr("I16")},
+		VarDecl{"j", NamedTypeExpr("I16")},
 		ExprStmt{AssignExpr{VarExpr("i"), IntegerExpr("7")}},
 		ExprStmt{AssignExpr{VarExpr("j"), IntegerExpr("5")}},
 		ExprStmt{AssignExpr{VarExpr("i"), BinaryExpr{BOpAdd, VarExpr("i"), VarExpr("j")}}},
 
-		VarDecl{"k", TypeU8},
-		VarDecl{"l", TypeU8},
+		VarDecl{"k", NamedTypeExpr("U8")},
+		VarDecl{"l", NamedTypeExpr("U8")},
 		ExprStmt{AssignExpr{VarExpr("k"), IntegerExpr("7")}},
 		ExprStmt{AssignExpr{VarExpr("l"), IntegerExpr("5")}},
 		ExprStmt{AssignExpr{VarExpr("k"), BinaryExpr{BOpAdd, VarExpr("k"), VarExpr("l")}}},
@@ -233,8 +233,8 @@ func TestReferenceVariable(t *testing.T) {
 		return 0
 	*/
 	testMainCompile(t, []Statement{
-		VarDecl{"i", TypeI32},
-		VarDecl{"j", PointerTo(TypeI32)},
+		VarDecl{"i", NamedTypeExpr("I32")},
+		VarDecl{"j", PointerTypeExpr{NamedTypeExpr("I32")}},
 		ExprStmt{AssignExpr{VarExpr("j"), RefExpr{VarExpr("i")}}},
 		ReturnStmt{IntegerExpr("0")},
 	}, `
@@ -251,7 +251,7 @@ func TestDereferencePointer(t *testing.T) {
 		return [p]
 	*/
 	testMainCompile(t, []Statement{
-		VarDecl{"p", PointerTo(TypeI32)},
+		VarDecl{"p", PointerTypeExpr{NamedTypeExpr("I32")}},
 		ReturnStmt{DerefExpr{VarExpr("p")}},
 	}, `
 		%t1 =l alloc8 8
@@ -270,8 +270,8 @@ func TestFunctionCall(t *testing.T) {
 		}
 	*/
 	testCompile(t, Program{
-		VarDecl{"printi", FuncType{[]ConcreteType{TypeI64}, nil}},
-		Function{true, "main", nil, TypeI32, []Statement{
+		VarDecl{"printi", FuncTypeExpr{[]TypeExpr{NamedTypeExpr("I64")}, nil}},
+		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
 			ExprStmt{CallExpr{VarExpr("printi"), []Expression{IntegerExpr("42")}}},
 			ReturnStmt{IntegerExpr("0")},
 		}},
@@ -301,8 +301,8 @@ func TestStringLiteral(t *testing.T) {
 		return ExprStmt{CallExpr{VarExpr("puts"), []Expression{StringExpr(s)}}}
 	}
 	testCompile(t, Program{
-		VarDecl{"puts", FuncType{[]ConcreteType{PointerTo(TypeI8)}, TypeI32}},
-		Function{true, "main", nil, TypeI32, []Statement{
+		VarDecl{"puts", FuncTypeExpr{[]TypeExpr{PointerTypeExpr{NamedTypeExpr("I8")}}, NamedTypeExpr("I32")}},
+		Function{true, "main", nil, NamedTypeExpr("I32"), []Statement{
 			puts("str0"),
 			puts("str0"),
 			puts("str1"),
