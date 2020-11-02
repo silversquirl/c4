@@ -3,6 +3,7 @@ package main
 const (
 	_ = iota
 
+	PrecGroup
 	PrecAssign
 
 	PrecOr

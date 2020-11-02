@@ -72,6 +72,12 @@ func init() {
 			return IntegerExpr(tok.S)
 		}},
 
+		TLParen: {PrecGroup, func(prec int, p *parser, tok Token) Expression {
+			e := p.parseExpression(0)
+			p.require(TRParen)
+			return e
+		}},
+
 		TAmp: {PrecPrefix, func(prec int, p *parser, tok Token) Expression {
 			v, ok := p.parseExpression(prec).(LValue)
 			if !ok {
