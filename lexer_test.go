@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func testTokens(t *testing.T, src string, toks []Token) {
 	tokC := make(chan Token)
@@ -52,56 +55,31 @@ func TestTokenize(t *testing.T) {
 }
 
 func TestAutoSemi(t *testing.T) {
-	testTokens(t, `
+	testTokens(t, strings.Join([]string{
 		// Non-auto-semi tokens
-		;
-		,
-		(
-		[
-		{
-		=
-		+
-		-
-		*
-		/
-		%
-		!
-		|
-		^
-		&
-		<
-		>
-		<<
-		>>
-		&&
-		||
-		==
-		!=
-		<=
-		>=
-		else
-		extern
-		fn
-		for
-		if
-		pub
-		return
-		type
-		var
+		`;`, `,`,
+		`(`, `[`, `{`,
+
+		`=`, `+`, `-`, `*`,
+		`/`, `%`, `!`, `|`,
+		`^`, `&`, `<`, `>`,
+
+		`<<`, `>>`, `&&`, `||`,
+		`==`, `!=`, `<=`, `>=`,
+
+		`else`, `extern`, `fn`, `for`,
+		`if`, `pub`, `return`, `type`,
+		`var`,
 
 		// Auto-semi tokens
-		)
-		]
-		}
-		foo
-		Foo
-		""
-		0
-		0.
-	`, []Token{
+		`)`, `]`, `}`,
+		`foo`, `Foo`,
+		`""`, `0`, `0.`,
+		``,
+	}, "\n"), []Token{
 		// Non-auto-semi tokens
-		{TSemi, ";"}, {TComma, ","}, {TLParen, "("}, {TLSquare, "["},
-		{TLBrace, "{"},
+		{TSemi, ";"}, {TComma, ","},
+		{TLParen, "("}, {TLSquare, "["}, {TLBrace, "{"},
 
 		{TEquals, "="}, {TPlus, "+"}, {TMinus, "-"}, {TAster, "*"},
 		{TSlash, "/"}, {TPerc, "%"}, {TExcl, "!"}, {TPipe, "|"},
