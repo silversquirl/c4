@@ -77,6 +77,11 @@ func init() {
 			p.require(TRParen)
 			return e
 		}},
+		TLSquare: {PrecGroup, func(prec int, p *parser, tok Token) Expression {
+			e := p.parseExpression(0)
+			p.require(TRSquare)
+			return DerefExpr{e}
+		}},
 
 		TAmp: {PrecPrefix, func(prec int, p *parser, tok Token) Expression {
 			v, ok := p.parseExpression(prec).(LValue)

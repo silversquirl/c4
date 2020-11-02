@@ -19,7 +19,9 @@ func main() {
 		scanf("%d", &b)
 
 		var c I32
-		c = 2 * (a + b)
+		var d [I32]
+		d = &c
+		[d] = 2 * (a + b)
 
 		printf("2 * (%d + %d) = %d\n", a, b, c)
 		return 0
