@@ -145,6 +145,7 @@ func (c *Compiler) DeclareLocal(name string, typ ConcreteType) Variable {
 		panic("Invalid alignment")
 	}
 	c.Insn(loc, 'l', op, IRInt(m.Size))
+	c.Insn(0, 0, "store"+typ.IRTypeName(), IRInt(0), loc)
 
 	return v
 }

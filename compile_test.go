@@ -160,7 +160,10 @@ func TestVariables(t *testing.T) {
 		export function w $main() {
 		@start
 			%t1 =l alloc4 4
+			storew 0, %t1
 			%t2 =l alloc4 4
+			storew 0, %t2
+
 			storew 7, %t1
 			storew 5, %t2
 
@@ -203,7 +206,10 @@ func TestSmallTypes(t *testing.T) {
 		ExprStmt{AssignExpr{VarExpr("k"), BinaryExpr{BOpAdd, VarExpr("k"), VarExpr("l")}}},
 	}, `
 		%t1 =l alloc4 2
+		storeh 0, %t1
 		%t2 =l alloc4 2
+		storeh 0, %t2
+
 		storeh 7, %t1
 		storeh 5, %t2
 
@@ -214,7 +220,10 @@ func TestSmallTypes(t *testing.T) {
 
 
 		%t6 =l alloc4 1
+		storeb 0, %t6
 		%t7 =l alloc4 1
+		storeb 0, %t7
+
 		storeb 7, %t6
 		storeb 5, %t7
 
@@ -239,7 +248,9 @@ func TestReferenceVariable(t *testing.T) {
 		ReturnStmt{IntegerExpr("0")},
 	}, `
 		%t1 =l alloc4 4
+		storew 0, %t1
 		%t2 =l alloc8 8
+		storel 0, %t2
 		storel %t1, %t2
 		ret 0
 	`)
@@ -255,6 +266,7 @@ func TestDereferencePointer(t *testing.T) {
 		ReturnStmt{DerefExpr{VarExpr("p")}},
 	}, `
 		%t1 =l alloc8 8
+		storel 0, %t1
 		%t2 =l loadl %t1
 		%t3 =w loadw %t2
 		ret %t3
