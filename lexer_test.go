@@ -19,7 +19,7 @@ func testTokens(t *testing.T, src string, toks []Token) {
 func TestTokenize(t *testing.T) {
 	testTokens(t, `
 		// Comment
-		;,()[]{}
+		;,()[]{} \
 		=+-*/%!|^&<> \
 		<<>>&&||==!=<=>= \
 		else extern fn for if pub return type var
@@ -48,5 +48,76 @@ func TestTokenize(t *testing.T) {
 		{TString, `""`}, {TString, `"hello"`}, {TInteger, "0"}, {TInteger, "1"},
 		{TInteger, "-1"}, {TFloat, "0."}, {TFloat, ".0"}, {TFloat, "0.0"},
 		{TFloat, "1.1"}, {TFloat, "-1.1"},
+	})
+}
+
+func TestAutoSemi(t *testing.T) {
+	testTokens(t, `
+		// Non-auto-semi tokens
+		;
+		,
+		(
+		[
+		{
+		=
+		+
+		-
+		*
+		/
+		%
+		!
+		|
+		^
+		&
+		<
+		>
+		<<
+		>>
+		&&
+		||
+		==
+		!=
+		<=
+		>=
+		else
+		extern
+		fn
+		for
+		if
+		pub
+		return
+		type
+		var
+
+		// Auto-semi tokens
+		)
+		]
+		}
+		foo
+		Foo
+		""
+		0
+		0.
+	`, []Token{
+		// Non-auto-semi tokens
+		{TSemi, ";"}, {TComma, ","}, {TLParen, "("}, {TLSquare, "["},
+		{TLBrace, "{"},
+
+		{TEquals, "="}, {TPlus, "+"}, {TMinus, "-"}, {TAster, "*"},
+		{TSlash, "/"}, {TPerc, "%"}, {TExcl, "!"}, {TPipe, "|"},
+		{TCaret, "^"}, {TAmp, "&"}, {TLess, "<"}, {TGreater, ">"},
+
+		{TShl, "<<"}, {TShr, ">>"}, {TLand, "&&"}, {TLor, "||"},
+		{TCeq, "=="}, {TCne, "!="}, {TCle, "<="}, {TCge, ">="},
+
+		{TKelse, "else"}, {TKextern, "extern"}, {TKfn, "fn"}, {TKfor, "for"},
+		{TKif, "if"}, {TKpub, "pub"}, {TKreturn, "return"}, {TKtype, "type"},
+		{TKvar, "var"},
+
+		// Non-auto-semi tokens
+		{TRParen, ")"}, {TSemi, "\n"}, {TRSquare, "]"}, {TSemi, "\n"},
+		{TRBrace, "}"}, {TSemi, "\n"}, {TIdent, "foo"}, {TSemi, "\n"},
+		{TType, "Foo"}, {TSemi, "\n"}, {TString, `""`}, {TSemi, "\n"},
+		{TInteger, "0"}, {TSemi, "\n"}, {TFloat, "0."}, {TSemi, "\n"},
 	})
 }

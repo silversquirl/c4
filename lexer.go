@@ -243,7 +243,7 @@ type TokenType int
 // autoSemi returns true if subsequent newlines should be replaced with semicolons
 func (ty TokenType) autoSemi() bool {
 	switch ty {
-	case TLParen, TLSquare, TLBrace:
+	case TRParen, TRSquare, TRBrace:
 	case TIdent, TType:
 	case TString, TInteger, TFloat:
 	default:
