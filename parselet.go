@@ -1,14 +1,6 @@
 package main
 
 var toplevelParselets = map[TokenType]toplevelParselet{
-	TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
-		vds := p.parseVarTypes()
-		tls := make([]Toplevel, len(vds))
-		for i, vd := range vds {
-			tls[i] = vd
-		}
-		return tls
-	},
 	TKfn: func(p *parser, tok Token, pub bool) []Toplevel {
 		// Parse function signature
 		name := p.require(TIdent).S
@@ -24,7 +16,7 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 			// Parse function body
 			var body []Statement
 			for l := p.list(TSemi, TRBrace); l.next(); {
-				body = append(body, p.parseStatement())
+				body = append(body, p.parseStatement()...)
 			}
 			tl = Function{pub, name, params, ret, body}
 		} else {
@@ -38,12 +30,28 @@ var toplevelParselets = map[TokenType]toplevelParselet{
 		p.require(TSemi)
 		return []Toplevel{tl}
 	},
+	TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
+		vds := p.parseVarTypes()
+		tls := make([]Toplevel, len(vds))
+		for i, vd := range vds {
+			tls[i] = vd
+		}
+		return tls
+	},
 }
 
 var statementParselets = map[TokenType]statementParselet{
-	TKreturn: func(p *parser, tok Token) Statement {
+	TKreturn: func(p *parser, tok Token) []Statement {
 		e := p.parseExpression(0)
-		return ReturnStmt{e}
+		return []Statement{ReturnStmt{e}}
+	},
+	TKvar: func(p *parser, tok Token) []Statement {
+		vds := p.parseVarTypes()
+		stmts := make([]Statement, len(vds))
+		for i, vd := range vds {
+			stmts[i] = vd
+		}
+		return stmts
 	},
 }
 

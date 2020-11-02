@@ -9,7 +9,7 @@ func init() {
 }
 
 type toplevelParselet func(*parser, Token, bool) []Toplevel
-type statementParselet func(*parser, Token) Statement
+type statementParselet func(*parser, Token) []Statement
 type prefixExprParselet struct {
 	prec int
 	fun  func(int, *parser, Token) Expression
@@ -130,12 +130,12 @@ func (p *parser) parseToplevel() []Toplevel {
 	return pl(p, tok, pub)
 }
 
-func (p *parser) parseStatement() Statement {
+func (p *parser) parseStatement() []Statement {
 	pl, ok := statementParselets[p.peek()]
 	if ok {
 		return pl(p, p.next())
 	} else {
-		return ExprStmt{p.parseExpression(0)}
+		return []Statement{ExprStmt{p.parseExpression(0)}}
 	}
 }
 
