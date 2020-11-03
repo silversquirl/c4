@@ -20,6 +20,9 @@ func fmtBlock(body []Statement) string {
 func (d VarDecl) Format() string {
 	return "var " + d.Name + " " + d.Ty.Format()
 }
+func (d VarsDecl) Format() string {
+	return "var " + strings.Join(d.Names, ", ") + " " + d.Ty.Format()
+}
 
 func (i IfStmt) Format() string {
 	s := "if " + i.Cond.Format() + " " + fmtBlock(i.Then)

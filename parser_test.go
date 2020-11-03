@@ -34,7 +34,7 @@ func TestExpression(t *testing.T) {
 }
 
 func TestStatement(t *testing.T) {
-	expr := []Statement{ReturnStmt{IntegerExpr("0")}}
+	expr := ReturnStmt{IntegerExpr("0")}
 	expr2 := testParser("return 0").parseStatement()
 	checkParse(t, expr, expr2)
 }

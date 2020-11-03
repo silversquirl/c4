@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"testing"
 )
@@ -11,10 +12,19 @@ func spc(ch byte) bool {
 }
 
 func testCompile(t *testing.T, code, ir string) {
-	prog, err := Parse(code)
-	if err != nil {
-		t.Fatal("Parse error:", err)
-	}
+	toks := make(chan Token)
+	go Tokenize(code, toks)
+	p := parser{<-toks, toks}
+	defer func() {
+		switch e := recover().(type) {
+		case nil:
+		case string:
+			t.Fatalf("Parse error: %s\n%s", e, debug.Stack())
+		default:
+			panic(e)
+		}
+	}()
+	prog := p.parseProgram()
 
 	b := &strings.Builder{}
 	c := NewCompiler(b)

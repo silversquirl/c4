@@ -3,49 +3,38 @@ package main
 var toplevelParselets map[TokenType]toplevelParselet
 
 func init() {
-	fn := func(p *parser, tok Token, pub bool, variadic bool) []Toplevel {
+	fn := func(p *parser, tok Token, pub bool, variadic bool) Toplevel {
 		// Parse function signature
 		name := p.require(TIdent).S
 		p.require(TLParen)
 		var params []VarDecl
 		for l := p.list(TComma, TRParen); l.next(); {
-			params = append(params, p.parseVarTypes()...)
+			params = append(params, p.parseVarTypes().Decls()...)
 		}
 		ret := p.parseType()
 
-		var tl Toplevel
-		if !variadic && p.accept(TLBrace) {
+		if !variadic && p.peek() == TLBrace {
 			// Parse function body
-			var body []Statement
-			for l := p.list(TSemi, TRBrace); l.next(); {
-				body = append(body, p.parseStatement()...)
-			}
-			tl = Function{pub, name, params, ret, body}
+			return Function{pub, name, params, ret, p.parseBlock()}
 		} else {
 			// No body, just a declaration
 			paramTy := make([]TypeExpr, len(params))
 			for i, param := range params {
 				paramTy[i] = param.Ty
 			}
-			tl = VarDecl{name, FuncTypeExpr{variadic, paramTy, ret}}
+			return VarsDecl{[]string{name}, FuncTypeExpr{variadic, paramTy, ret}}
 		}
-		return []Toplevel{tl}
 	}
 
 	toplevelParselets = map[TokenType]toplevelParselet{
-		TKfn: func(p *parser, tok Token, pub bool) []Toplevel {
+		TKfn: func(p *parser, tok Token, pub bool) Toplevel {
 			return fn(p, tok, pub, false)
 		},
-		TKvariadic: func(p *parser, tok Token, pub bool) []Toplevel {
+		TKvariadic: func(p *parser, tok Token, pub bool) Toplevel {
 			return fn(p, p.require(TKfn), pub, true)
 		},
-		TKvar: func(p *parser, tok Token, pub bool) []Toplevel {
-			vds := p.parseVarTypes()
-			tls := make([]Toplevel, len(vds))
-			for i, vd := range vds {
-				tls[i] = vd
-			}
-			return tls
+		TKvar: func(p *parser, tok Token, pub bool) Toplevel {
+			return p.parseVarTypes()
 		},
 	}
 }
@@ -54,38 +43,27 @@ var statementParselets map[TokenType]statementParselet
 
 func init() {
 	statementParselets = map[TokenType]statementParselet{
-		TKreturn: func(p *parser, tok Token) []Statement {
+		TKreturn: func(p *parser, tok Token) Statement {
 			e := p.parseExpression(0)
-			return []Statement{ReturnStmt{e}}
+			return ReturnStmt{e}
 		},
-		TKvar: func(p *parser, tok Token) []Statement {
-			vds := p.parseVarTypes()
-			stmts := make([]Statement, len(vds))
-			for i, vd := range vds {
-				stmts[i] = vd
-			}
-			return stmts
+		TKvar: func(p *parser, tok Token) Statement {
+			return p.parseVarTypes()
 		},
-		TKif: func(p *parser, tok Token) []Statement {
+
+		TKif: func(p *parser, tok Token) Statement {
 			i := IfStmt{}
 			i.Cond = p.parseExpression(0)
-			p.require(TLBrace)
-			for l := p.list(TSemi, TRBrace); l.next(); {
-				i.Then = append(i.Then, p.parseStatement()...)
-			}
+			i.Then = p.parseBlock()
 
 			if p.accept(TKelse) {
 				if p.peek() == TKif {
-					i.Else = p.parseStatement()
+					i.Else = []Statement{p.parseStatement()}
 				} else {
-					p.require(TLBrace)
-					for l := p.list(TSemi, TRBrace); l.next(); {
-						i.Else = append(i.Else, p.parseStatement()...)
-					}
+					i.Else = p.parseBlock()
 				}
 			}
-
-			return []Statement{i}
+			return i
 		},
 	}
 }

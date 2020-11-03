@@ -21,11 +21,17 @@ func (f Function) GenToplevel(c *Compiler) {
 	}
 }
 
-func (d VarDecl) GenStatement(c *Compiler) {
-	c.DeclareLocal(d.Name, d.Ty.Get(c))
+func (d VarsDecl) GenStatement(c *Compiler) {
+	ty := d.Ty.Get(c)
+	for _, name := range d.Names {
+		c.DeclareLocal(name, ty)
+	}
 }
-func (d VarDecl) GenToplevel(c *Compiler) {
-	c.DeclareGlobal(d.Name, d.Ty.Get(c))
+func (d VarsDecl) GenToplevel(c *Compiler) {
+	ty := d.Ty.Get(c)
+	for _, name := range d.Names {
+		c.DeclareGlobal(name, ty)
+	}
 }
 
 func (i IfStmt) GenStatement(c *Compiler) {

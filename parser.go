@@ -8,8 +8,8 @@ import (
 func init() {
 }
 
-type toplevelParselet func(*parser, Token, bool) []Toplevel
-type statementParselet func(*parser, Token) []Statement
+type toplevelParselet func(*parser, Token, bool) Toplevel
+type statementParselet func(*parser, Token) Statement
 type prefixExprParselet struct {
 	prec int
 	fun  func(int, *parser, Token) Expression
@@ -113,13 +113,13 @@ func (p *parser) list(sep, end TokenType) listParser {
 
 func (p *parser) parseProgram() (prog Program) {
 	for p.peek() != TEOF {
-		prog = append(prog, p.parseToplevel()...)
+		prog = append(prog, p.parseToplevel())
 		p.require(TSemi, TEOF)
 	}
 	return prog
 }
 
-func (p *parser) parseToplevel() []Toplevel {
+func (p *parser) parseToplevel() Toplevel {
 	// TODO: more modifiers
 	pub := false
 	if p.peek() == TKpub {
@@ -134,12 +134,20 @@ func (p *parser) parseToplevel() []Toplevel {
 	return pl(p, p.next(), pub)
 }
 
-func (p *parser) parseStatement() []Statement {
+func (p *parser) parseBlock() (stmts []Statement) {
+	p.require(TLBrace)
+	for l := p.list(TSemi, TRBrace); l.next(); {
+		stmts = append(stmts, p.parseStatement())
+	}
+	return
+}
+
+func (p *parser) parseStatement() Statement {
 	pl, ok := statementParselets[p.peek()]
 	if ok {
 		return pl(p, p.next())
 	} else {
-		return []Statement{ExprStmt{p.parseExpression(0)}}
+		return ExprStmt{p.parseExpression(0)}
 	}
 }
 
@@ -159,7 +167,7 @@ func (p *parser) parseExpression(prec int) Expression {
 	}
 }
 
-func (p *parser) parseVarTypes() []VarDecl {
+func (p *parser) parseVarTypes() VarsDecl {
 	names := []string{p.require(TIdent).S}
 	for {
 		if !p.accept(TComma) {
@@ -176,11 +184,7 @@ func (p *parser) parseVarTypes() []VarDecl {
 		p.errExpect("type")
 	}
 
-	decls := make([]VarDecl, len(names))
-	for i, name := range names {
-		decls[i] = VarDecl{name, ty}
-	}
-	return decls
+	return VarsDecl{names, ty}
 }
 
 func (p *parser) parseType() TypeExpr {

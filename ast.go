@@ -23,6 +23,18 @@ type VarDecl struct {
 	Name string
 	Ty   TypeExpr
 }
+type VarsDecl struct {
+	Names []string
+	Ty    TypeExpr
+}
+
+func (d VarsDecl) Decls() []VarDecl {
+	ds := make([]VarDecl, len(d.Names))
+	for i, name := range d.Names {
+		ds[i] = VarDecl{name, d.Ty}
+	}
+	return ds
+}
 
 type IfStmt struct {
 	Cond       Expression
