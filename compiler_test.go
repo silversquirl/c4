@@ -231,6 +231,32 @@ func TestTypeDef(t *testing.T) {
 	`)
 }
 
+func TestTypeAlias(t *testing.T) {
+	testCompile(t, `
+		type Foo = I32
+		pub fn main() I32 {
+			var foo Foo
+			var bar I32
+			foo / bar
+
+			return 0
+		}
+	`, `
+		export function w $main() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			%t2 =l alloc4 4
+			storew 0, %t2
+			%t3 =w loadw %t1
+			%t4 =w loadw %t2
+			%t5 =w div %t3, %t4
+
+			ret 0
+		}
+	`)
+}
+
 func TestSmallTypes(t *testing.T) {
 	testMainCompile(t, `
 		var i, j I16

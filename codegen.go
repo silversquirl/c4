@@ -37,6 +37,9 @@ func (d VarsDecl) GenToplevel(c *Compiler) {
 func (t TypeDef) GenToplevel(c *Compiler) {
 	c.DefineType(t.Name, t.Ty.Get(c))
 }
+func (t TypeAlias) GenToplevel(c *Compiler) {
+	c.AliasType(t.Name, t.Ty.Get(c))
+}
 
 func (i IfStmt) GenStatement(c *Compiler) {
 	thenB := c.Block()

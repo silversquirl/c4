@@ -35,6 +35,10 @@ type TypeDef struct {
 	Name string
 	Ty   TypeExpr
 }
+type TypeAlias struct {
+	Name string
+	Ty   TypeExpr
+}
 
 type Statement interface {
 	Format() string

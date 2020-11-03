@@ -116,12 +116,15 @@ func (c *Compiler) Temporary() Temporary {
 	return c.temp
 }
 
-func (c *Compiler) DefineType(name string, typ ConcreteType) NamedType {
+func (c *Compiler) AliasType(name string, ty ConcreteType) {
 	if _, ok := c.typs[name]; ok {
 		panic("Type already exists")
 	}
-	ty := NamedType{typ, name}
 	c.typs[name] = ty
+}
+func (c *Compiler) DefineType(name string, typ ConcreteType) NamedType {
+	ty := NamedType{typ, name}
+	c.AliasType(name, ty)
 	return ty
 }
 func (c *Compiler) Type(name string) ConcreteType {

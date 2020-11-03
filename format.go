@@ -27,6 +27,9 @@ func (d VarsDecl) Format() string {
 func (t TypeDef) Format() string {
 	return "type " + t.Name + " " + t.Ty.Format()
 }
+func (t TypeAlias) Format() string {
+	return "type " + t.Name + " = " + t.Ty.Format()
+}
 
 func (i IfStmt) Format() string {
 	s := "if " + i.Cond.Format() + " " + fmtBlock(i.Then)

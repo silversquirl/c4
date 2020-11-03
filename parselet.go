@@ -77,7 +77,11 @@ func init() {
 		},
 		TKtype: func(p *parser, tok Token, pub bool) Toplevel {
 			name := p.require(TType).S
-			return TypeDef{name, p.parseType()}
+			if p.accept(TEquals) {
+				return TypeAlias{name, p.parseType()}
+			} else {
+				return TypeDef{name, p.parseType()}
+			}
 		},
 	}
 }
