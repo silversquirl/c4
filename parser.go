@@ -8,18 +8,6 @@ import (
 func init() {
 }
 
-type toplevelParselet func(*parser, Token, bool) Toplevel
-type statementParselet func(*parser, Token) Statement
-type prefixExprParselet struct {
-	prec int
-	fun  func(int, *parser, Token) Expression
-}
-type exprParselet struct {
-	prec int
-	fun  func(int, *parser, Token, Expression) Expression
-}
-type typeParselet func(*parser, Token) TypeExpr
-
 func Parse(code string) (prog Program, err error) {
 	toks := make(chan Token)
 	go Tokenize(code, toks)
@@ -109,88 +97,4 @@ func (p *listParser) next() bool {
 }
 func (p *parser) list(sep, end TokenType) listParser {
 	return listParser{p, false, sep, end}
-}
-
-func (p *parser) parseProgram() (prog Program) {
-	for p.peek() != TEOF {
-		prog = append(prog, p.parseToplevel())
-		p.require(TSemi, TEOF)
-	}
-	return prog
-}
-
-func (p *parser) parseToplevel() Toplevel {
-	// TODO: more modifiers
-	pub := false
-	if p.peek() == TKpub {
-		pub = true
-		p.next()
-	}
-
-	pl, ok := toplevelParselets[p.peek()]
-	if !ok {
-		p.errExpect("toplevel construct")
-	}
-	return pl(p, p.next(), pub)
-}
-
-func (p *parser) parseBlock() (stmts []Statement) {
-	p.require(TLBrace)
-	for l := p.list(TSemi, TRBrace); l.next(); {
-		stmts = append(stmts, p.parseStatement())
-	}
-	return
-}
-
-func (p *parser) parseStatement() Statement {
-	pl, ok := statementParselets[p.peek()]
-	if ok {
-		return pl(p, p.next())
-	} else {
-		return ExprStmt{p.parseExpression(0)}
-	}
-}
-
-func (p *parser) parseExpression(prec int) Expression {
-	pl, ok := prefixExprParselets[p.peek()]
-	if !ok {
-		p.errExpect("expression")
-	}
-	left := pl.fun(pl.prec, p, p.next())
-
-	for {
-		pl := exprParselets[p.peek()]
-		if pl.prec <= prec {
-			return left
-		}
-		left = pl.fun(pl.prec, p, p.next(), left)
-	}
-}
-
-func (p *parser) parseVarTypes() VarsDecl {
-	names := []string{p.require(TIdent).S}
-	for {
-		if !p.accept(TComma) {
-			break
-		}
-		if p.peek() != TIdent {
-			break
-		}
-		names = append(names, p.next().S)
-	}
-
-	ty := p.parseType()
-	if ty == nil {
-		p.errExpect("type")
-	}
-
-	return VarsDecl{names, ty}
-}
-
-func (p *parser) parseType() TypeExpr {
-	pl, ok := typeParselets[p.peek()]
-	if !ok {
-		return nil
-	}
-	return pl(p, p.next())
 }
