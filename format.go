@@ -32,6 +32,32 @@ func (i IfStmt) Format() string {
 	return s
 }
 
+func (f ForStmt) Format() string {
+	b := &strings.Builder{}
+	b.WriteString("for ")
+	if f.Init != nil || f.Step != nil {
+		if f.Init != nil {
+			b.WriteString(f.Init.Format())
+		}
+		b.WriteByte(';')
+		if f.Cond != nil {
+			b.WriteByte(' ')
+			b.WriteString(f.Cond.Format())
+		}
+		b.WriteByte(';')
+		if f.Step != nil {
+			b.WriteByte(' ')
+			b.WriteString(f.Step.Format())
+		}
+		b.WriteByte(' ')
+	} else if f.Cond != nil {
+		b.WriteString(f.Cond.Format())
+		b.WriteByte(' ')
+	}
+	b.WriteString(fmtBlock(f.Body))
+	return b.String()
+}
+
 func (r ReturnStmt) Format() string {
 	return "return " + r.Value.Format()
 }

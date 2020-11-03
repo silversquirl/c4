@@ -40,6 +40,11 @@ type IfStmt struct {
 	Cond       Expression
 	Then, Else []Statement
 }
+type ForStmt struct {
+	Init       Statement
+	Cond, Step Expression
+	Body       []Statement
+}
 
 type ReturnStmt struct {
 	Value Expression

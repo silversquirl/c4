@@ -65,6 +65,36 @@ func init() {
 			}
 			return i
 		},
+
+		TKfor: func(p *parser, tok Token) Statement {
+			if p.peek() == TLBrace {
+				// No arguments
+				return ForStmt{nil, nil, nil, p.parseBlock()}
+			}
+
+			var init Statement
+			var cond, step Expression
+			if !p.accept(TSemi) {
+				init = p.parseStatement()
+				if !p.accept(TSemi) {
+					// One arg
+					if cond, ok := init.(ExprStmt); !ok {
+						panic("Expected expression, got statement")
+					} else {
+						return ForStmt{nil, cond, nil, p.parseBlock()}
+					}
+				}
+			}
+
+			if !p.accept(TSemi) {
+				cond = p.parseExpression(0)
+				p.require(TSemi)
+			}
+			if p.peek() != TLBrace {
+				step = p.parseExpression(0)
+			}
+			return ForStmt{init, cond, step, p.parseBlock()}
+		},
 	}
 }
 

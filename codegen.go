@@ -54,6 +54,34 @@ func (i IfStmt) GenStatement(c *Compiler) {
 	c.StartBlock(endB)
 }
 
+func (f ForStmt) GenStatement(c *Compiler) {
+	startB := c.Block()
+	bodyB := c.Block()
+	endB := c.Block()
+
+	// TODO: scope
+	if f.Init != nil {
+		f.Init.GenStatement(c)
+	}
+
+	c.StartBlock(startB)
+	if f.Cond != nil {
+		cond := f.Cond.GenExpression(c)
+		c.Insn(0, 0, "jnz", cond, bodyB, endB)
+	}
+
+	c.StartBlock(bodyB)
+	for _, stmt := range f.Body {
+		stmt.GenStatement(c)
+	}
+
+	if f.Step != nil {
+		f.Step.GenExpression(c)
+	}
+	c.Insn(0, 0, "jmp", startB)
+	c.StartBlock(endB)
+}
+
 func (r ReturnStmt) GenStatement(c *Compiler) {
 	v := r.Value.GenExpression(c)
 	c.Insn(0, 0, "ret", v)

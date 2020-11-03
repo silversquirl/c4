@@ -62,7 +62,7 @@ func testCompile(t *testing.T, code, ir string) {
 		}
 
 		if spc0 != spc1 || ir0[i0] != ir1[i1] {
-			t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s", i0, i1, ir0[i0:])
+			t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s!!%s", i0, i1, ir0[:i0], ir0[i0:])
 		}
 		i0++
 		i1++
@@ -325,6 +325,117 @@ func TestElseIf(t *testing.T) {
 		ret 3
 	@b9
 	@b6
+	@b3
+	`)
+}
+
+func TestFor0(t *testing.T) {
+	testMainCompile(t, `
+		for {return 0}
+		for ;; {return 1}
+	`, `
+	@b1
+	@b2
+		ret 0
+		jmp @b1
+	@b3
+
+	@b4
+	@b5
+		ret 1
+		jmp @b4
+	@b6
+	`)
+}
+
+func TestFor1(t *testing.T) {
+	testMainCompile(t, `
+		for 1 {return 0}
+		for ; 2; {return 1}
+	`, `
+	@b1
+		jnz 1, @b2, @b3
+	@b2
+		ret 0
+		jmp @b1
+	@b3
+
+	@b4
+		jnz 2, @b5, @b6
+	@b5
+		ret 1
+		jmp @b4
+	@b6
+	`)
+}
+
+func TestFor1Other(t *testing.T) {
+	testMainCompile(t, `
+		var a I32
+		for a = 1;; {return 0}
+		for ;; a = 2 {return 1}
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
+		storew 1, %t1
+	@b1
+	@b2
+		ret 0
+		jmp @b1
+	@b3
+
+	@b4
+	@b5
+		ret 1
+		storew 2, %t1
+		jmp @b4
+	@b6
+	`)
+}
+
+func TestFor2(t *testing.T) {
+	testMainCompile(t, `
+		var a I32
+		for a = 0; 1; {return 0}
+		for ; 0; a = 1 {return 1}
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
+		storew 0, %t1
+	@b1
+		jnz 1, @b2, @b3
+	@b2
+		ret 0
+		jmp @b1
+	@b3
+
+	@b4
+		jnz 0, @b5, @b6
+	@b5
+		ret 1
+		storew 1, %t1
+		jmp @b4
+	@b6
+	`)
+}
+
+func TestFor3(t *testing.T) {
+	testMainCompile(t, `
+		var a I32
+		for a = 0; 1; a = 1 {return 0}
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
+		storew 0, %t1
+	@b1
+		jnz 1, @b2, @b3
+	@b2
+		ret 0
+		storew 1, %t1
+		jmp @b1
 	@b3
 	`)
 }
