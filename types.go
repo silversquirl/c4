@@ -295,3 +295,8 @@ type NamedType struct {
 	ConcreteType
 	Name string
 }
+
+func (a NamedType) Equals(other Type) bool {
+	b, ok := other.(NamedType)
+	return ok && a.Name == b.Name && a.ConcreteType.Equals(b.ConcreteType)
+}

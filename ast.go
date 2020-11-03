@@ -14,11 +14,6 @@ type Function struct {
 	Body  []Statement
 }
 
-type Statement interface {
-	Format() string
-	GenStatement(c *Compiler)
-}
-
 type VarDecl struct {
 	Name string
 	Ty   TypeExpr
@@ -34,6 +29,16 @@ func (d VarsDecl) Decls() []VarDecl {
 		ds[i] = VarDecl{name, d.Ty}
 	}
 	return ds
+}
+
+type TypeDef struct {
+	Name string
+	Ty   TypeExpr
+}
+
+type Statement interface {
+	Format() string
+	GenStatement(c *Compiler)
 }
 
 type IfStmt struct {

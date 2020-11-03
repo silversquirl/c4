@@ -75,6 +75,10 @@ func init() {
 		TKvar: func(p *parser, tok Token, pub bool) Toplevel {
 			return p.parseVarTypes()
 		},
+		TKtype: func(p *parser, tok Token, pub bool) Toplevel {
+			name := p.require(TType).S
+			return TypeDef{name, p.parseType()}
+		},
 	}
 }
 

@@ -24,6 +24,10 @@ func (d VarsDecl) Format() string {
 	return "var " + strings.Join(d.Names, ", ") + " " + d.Ty.Format()
 }
 
+func (t TypeDef) Format() string {
+	return "type " + t.Name + " " + t.Ty.Format()
+}
+
 func (i IfStmt) Format() string {
 	s := "if " + i.Cond.Format() + " " + fmtBlock(i.Then)
 	if i.Else != nil {

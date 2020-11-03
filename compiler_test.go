@@ -198,6 +198,39 @@ func TestVariables(t *testing.T) {
 	`)
 }
 
+func TestTypeDef(t *testing.T) {
+	testCompile(t, `
+		type Foo I32
+		type Bar U64
+		pub fn main() I32 {
+			var foo Foo
+			foo / foo
+
+			var bar Bar
+			bar / bar
+
+			return 0
+		}
+	`, `
+		export function w $main() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			%t2 =w loadw %t1
+			%t3 =w loadw %t1
+			%t4 =w div %t2, %t3
+
+			%t5 =l alloc8 8
+			storel 0, %t5
+			%t6 =l loadl %t5
+			%t7 =l loadl %t5
+			%t8 =l udiv %t6, %t7
+
+			ret 0
+		}
+	`)
+}
+
 func TestSmallTypes(t *testing.T) {
 	testMainCompile(t, `
 		var i, j I16

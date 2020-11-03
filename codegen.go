@@ -34,6 +34,10 @@ func (d VarsDecl) GenToplevel(c *Compiler) {
 	}
 }
 
+func (t TypeDef) GenToplevel(c *Compiler) {
+	c.DefineType(t.Name, t.Ty.Get(c))
+}
+
 func (i IfStmt) GenStatement(c *Compiler) {
 	thenB := c.Block()
 	elseB := c.Block()
@@ -93,14 +97,14 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 
 func (e AssignExpr) GenExpression(c *Compiler) Operand {
 	// TODO: allow storing non-numeric types
-	ty := e.TypeOf(c).(NumericType)
+	ty := e.TypeOf(c).Concrete().(NumericType)
 	l := e.L.GenPointer(c)
 	r := e.R.GenExpression(c)
 	genPtrStore(l, r, ty, c)
 	return l
 }
 func (e MutateExpr) GenExpression(c *Compiler) Operand {
-	ty := e.TypeOf(c).(NumericType)
+	ty := e.TypeOf(c).Concrete().(NumericType)
 
 	l := e.L.GenPointer(c)
 	lv := genPtrLoad(l, ty, c)
@@ -158,7 +162,7 @@ func genPtrLoad(ptr Operand, ty NumericType, c *Compiler) Operand {
 	return tmp
 }
 func genLValueExpr(lv LValue, c *Compiler) Operand {
-	ty, ok := lv.TypeOf(c).(NumericType)
+	ty, ok := lv.TypeOf(c).Concrete().(NumericType)
 	if !ok {
 		panic("Attempted load of non-numeric type")
 	}
@@ -186,7 +190,7 @@ func (e DerefExpr) GenPointer(c *Compiler) Operand {
 }
 
 func (e PrefixExpr) GenExpression(c *Compiler) Operand {
-	t := e.TypeOf(c).(NumericType)
+	t := e.TypeOf(c).Concrete().(NumericType)
 	v := e.V.GenExpression(c)
 	tmp := c.Temporary()
 	op, arg0 := e.Op.Instruction(t)
@@ -212,7 +216,7 @@ func (op PrefixOperator) Instruction(ty NumericType) (string, Operand) {
 }
 
 func (e BinaryExpr) GenExpression(c *Compiler) Operand {
-	t := e.TypeOf(c).(NumericType)
+	t := e.TypeOf(c).Concrete().(NumericType)
 	l := e.L.GenExpression(c)
 	r := e.R.GenExpression(c)
 	v := c.Temporary()

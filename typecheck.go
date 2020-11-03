@@ -1,8 +1,8 @@
 package main
 
 func (e AssignExpr) TypeOf(c *Compiler) Type {
-	ltyp, ok := e.L.TypeOf(c).(ConcreteType)
-	if !ok {
+	ltyp := e.L.TypeOf(c)
+	if !ltyp.IsConcrete() {
 		panic("Lvalue of non-concrete type")
 	}
 	rtyp := e.R.TypeOf(c)
@@ -47,8 +47,8 @@ func (e DerefExpr) TypeOf(c *Compiler) Type {
 
 // FIXME: not and inv require integer types
 func (e PrefixExpr) TypeOf(c *Compiler) Type {
-	vty := e.V.TypeOf(c).Concrete()
-	if ty, ok := vty.(NumericType); !ok {
+	ty := e.V.TypeOf(c)
+	if _, ok := ty.Concrete().(NumericType); !ok {
 		panic("Operand of prefix expression is of non-numeric type")
 	} else {
 		return ty
@@ -63,15 +63,7 @@ func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	if !Compatible(ltyp, rtyp) {
 		panic("Operands of binary expression are incompatible")
 	}
-	ctyp := ltyp.Concrete()
-	if !ltyp.IsConcrete() && rtyp.IsConcrete() {
-		ctyp = rtyp.Concrete()
-	}
-	typ, ok := ctyp.(NumericType)
-	if !ok {
-		panic("Operand of binary expression is of non-numeric type")
-	}
-	return typ
+	return ltyp
 }
 
 func (_ IntegerExpr) TypeOf(c *Compiler) Type {
