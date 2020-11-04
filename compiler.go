@@ -134,19 +134,23 @@ func (c *Compiler) Type(name string) ConcreteType {
 }
 
 func (c *Compiler) CompositeType(layout CompositeLayout) string {
-	var i int
-	for i = range c.comp {
-		o := c.comp[i].lexicalOrder(layout)
-		if o == 0 {
-			return layout.ident()
-		} else if o > 0 {
-			break
+	ident := layout.Ident()
+	for i, layout_ := range c.comp {
+		switch strings.Compare(layout_.Ident(), ident) {
+		case 0:
+			// Return
+			return ident
+		case 1:
+			// Insert
+			c.comp = append(c.comp, nil)
+			copy(c.comp[i+1:], c.comp[i:])
+			c.comp[i] = layout
+			return ident
 		}
 	}
-	c.comp = append(c.comp, nil)
-	copy(c.comp[i+1:], c.comp[i:])
-	c.comp[i] = layout
-	return layout.ident()
+	// Append
+	c.comp = append(c.comp, layout)
+	return ident
 }
 
 func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {
@@ -214,40 +218,22 @@ func (c *Compiler) Finish() {
 
 type CompositeLayout []CompositeEntry
 type CompositeEntry struct {
-	Ty byte
+	Ty string
 	N  int
 }
 
-func irTypeLen(ty byte) int {
-	switch ty {
-	case 'b':
-		return 1
-	case 'h':
-		return 2
-	case 'w', 's':
-		return 4
-	case 'l', 'd':
-		return 8
-	}
-	panic("Invalid IR type: '" + string(ty) + "'")
-}
-
-func (a CompositeLayout) lexicalOrder(b CompositeLayout) int {
-	for i := 0; i < len(a) && i < len(b); i++ {
-		if a[i].Ty != b[i].Ty {
-			return irTypeLen(a[i].Ty) - irTypeLen(b[i].Ty)
-		} else if a[i].N != b[i].N {
-			return a[i].N - b[i].N
-		}
-	}
-	return 0
-}
-
-func (l CompositeLayout) ident() string {
+func (l CompositeLayout) Ident() string {
 	b := &strings.Builder{}
 	b.WriteByte(':')
 	for _, entry := range l {
-		b.WriteByte(entry.Ty)
+		if len(entry.Ty) > 1 {
+			// X and Y act as parentheses
+			b.WriteByte('X')
+			b.WriteString(entry.Ty)
+			b.WriteByte('Y')
+		} else {
+			b.WriteString(entry.Ty)
+		}
 		if entry.N > 1 {
 			fmt.Fprintf(b, "%d", entry.N)
 		}
@@ -256,12 +242,12 @@ func (l CompositeLayout) ident() string {
 }
 
 func (l CompositeLayout) GenType(c *Compiler) {
-	c.Writef("type %s = { ", l.ident())
+	c.Writef("type %s = { ", l.Ident())
 	for i, entry := range l {
 		if i > 0 {
 			c.Writef(", ")
 		}
-		c.Writef("%c", entry.Ty)
+		c.Writef("%s", entry.Ty)
 		if entry.N > 1 {
 			c.Writef(" %d", entry.N)
 		}

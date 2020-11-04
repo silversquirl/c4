@@ -299,6 +299,34 @@ func TestStruct(t *testing.T) {
 	`)
 }
 
+func TestUnion(t *testing.T) {
+	testCompile(t, `
+		type Foo union { a, b I32; c I64 }
+		type Bar union { a, b, c I8 }
+		fn fooFn(_ Foo)
+		fn barFn(_ Bar)
+		pub fn main() I32 {
+			var foo Foo
+			fooFn(foo)
+			var bar Bar
+			barFn(bar)
+		}
+	`, `
+		export function w $main() {
+		@start
+			%t1 =l alloc8 8
+			storel 0, %t1
+			call $fooFn(:l %t1)
+
+			%t2 =l alloc4 1
+			storeb 0, %t2
+			call $barFn(:b %t2)
+		}
+		type :b = { b }
+		type :l = { l }
+	`)
+}
+
 func TestSmallTypes(t *testing.T) {
 	testMainCompile(t, `
 		var i, j I16

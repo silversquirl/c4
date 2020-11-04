@@ -300,33 +300,6 @@ type StructType struct{ CompositeType }
 type UnionType struct{ CompositeType }
 
 func (comp CompositeType) composite() CompositeType { return comp }
-func (comp CompositeType) layout(c *Compiler) (layout CompositeLayout) {
-	var ent CompositeEntry
-	for _, field := range comp {
-		var entries []CompositeEntry
-		switch ty := field.Ty.(type) {
-		case interface{ layout() CompositeLayout }:
-			entries = ty.layout()
-		default:
-			entries = []CompositeEntry{
-				{ty.IRTypeName(c)[0], 1},
-			}
-		}
-
-		for _, entry := range entries {
-			if ent.N > 0 && ent.Ty != entry.Ty {
-				layout = append(layout, ent)
-				ent.N = 0
-			}
-			ent.Ty = entry.Ty
-			ent.N += entry.N
-		}
-	}
-	if ent.N > 0 {
-		layout = append(layout, ent)
-	}
-	return layout
-}
 
 func (a CompositeType) equals(b CompositeType) bool {
 	if len(a) != len(b) {
@@ -383,6 +356,23 @@ func (s StructType) Format() string {
 func (s StructType) IRTypeName(c *Compiler) string {
 	return c.CompositeType(s.layout(c))
 }
+func (s StructType) layout(c *Compiler) CompositeLayout {
+	var ent CompositeEntry
+	var layout CompositeLayout
+	for _, field := range s.CompositeType {
+		ty := field.Ty.IRTypeName(c)
+		if ent.N > 0 && ent.Ty != ty {
+			layout = append(layout, ent)
+			ent.N = 0
+		}
+		ent.Ty = ty
+		ent.N++
+	}
+	if ent.N > 0 {
+		layout = append(layout, ent)
+	}
+	return layout
+}
 
 func (a UnionType) Equals(other Type) bool {
 	b, ok := other.(UnionType)
@@ -391,21 +381,26 @@ func (a UnionType) Equals(other Type) bool {
 func (u UnionType) Concrete() ConcreteType {
 	return u
 }
-func (u UnionType) Metrics() (m TypeMetrics) {
-	for _, field := range u.CompositeType {
-		fm := field.Ty.Metrics()
-		if m.Align < fm.Align {
-			m.Align = fm.Align
-		}
-		if m.Size < fm.Size {
-			m.Size = fm.Size
-		}
-	}
-	return
+func (u UnionType) Metrics() TypeMetrics {
+	return u.largest().Ty.Metrics()
 }
 func (u UnionType) Format() string {
 	return "union " + u.format()
 }
 func (u UnionType) IRTypeName(c *Compiler) string {
 	return c.CompositeType(u.layout(c))
+}
+func (u UnionType) layout(c *Compiler) CompositeLayout {
+	return CompositeLayout{{u.largest().Ty.IRTypeName(c), 1}}
+}
+func (u UnionType) largest() (f Field) {
+	fs := 0
+	for _, field := range u.CompositeType {
+		fsiz := field.Ty.Metrics().Size
+		if fsiz > fs {
+			f = field
+			fs = fsiz
+		}
+	}
+	return
 }
