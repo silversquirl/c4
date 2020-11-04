@@ -72,8 +72,11 @@ func TestPrecedence(t *testing.T) {
 	testExpr(t, "a + b * c", "(a + (b * c))")
 	testExpr(t, "a << b + c", "(a << (b + c))")
 	testExpr(t, "a & b << c", "(a & (b << c))")
-	testExpr(t, "a = b | c", "(a = (b | c))")
-	testExpr(t, "(a = b) | c", "((a = b) | c)")
+	testExpr(t, "a == b & c", "(a == (b & c))")
+	testExpr(t, "a && b == c", "(a && (b == c))")
+	testExpr(t, "a || b && c", "(a || (b && c))")
+	testExpr(t, "a = b || c", "(a = (b || c))")
+	testExpr(t, "(a = b) || c", "((a = b) || c)")
 }
 
 func TestAssociativity(t *testing.T) {
@@ -86,5 +89,10 @@ func TestAssociativity(t *testing.T) {
 	testExpr(t, "a & b & c", "((a & b) & c)")
 	testExpr(t, "a ^ b & c", "((a ^ b) & c)")
 	testExpr(t, "a | b ^ c", "((a | b) ^ c)")
+	testExpr(t, "a == b == c", "((a == b) == c)")
+	testExpr(t, "a == b != c", "((a == b) != c)")
+	testExpr(t, "a == b < c", "((a == b) < c)")
+	testExpr(t, "a && b && c", "((a && b) && c)")
+	testExpr(t, "a || b || c", "((a || b) || c)")
 	testExpr(t, "a = b = c", "(a = (b = c))")
 }

@@ -66,6 +66,15 @@ func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	return ltyp
 }
 
+func (e BooleanExpr) TypeOf(c *Compiler) Type {
+	ltyp := e.L.TypeOf(c)
+	rtyp := e.R.TypeOf(c)
+	if !Compatible(ltyp, rtyp) {
+		panic("Operands of boolean expression are incompatible")
+	}
+	return ltyp
+}
+
 func (_ IntegerExpr) TypeOf(c *Compiler) Type {
 	return IntLitType{}
 }

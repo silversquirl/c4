@@ -204,6 +204,8 @@ func (e PrefixExpr) GenExpression(c *Compiler) Operand {
 	}
 	return tmp
 }
+
+var _ = [1]int{0}[PrefixOperatorMax-5] // Assert correct number of prefix operators
 func (op PrefixOperator) Instruction(c *Compiler, ty NumericType) (string, Operand) {
 	switch op {
 	case PrefNot:
@@ -226,6 +228,8 @@ func (e BinaryExpr) GenExpression(c *Compiler) Operand {
 	c.Insn(v, t.IRBaseTypeName(), e.Op.Instruction(t), l, r)
 	return v
 }
+
+var _ = [1]int{0}[BinaryOperatorMax-17] // Assert correct number of binary operators
 func (op BinaryOperator) Instruction(typ NumericType) string {
 	switch op {
 	case BinAdd:
@@ -261,8 +265,68 @@ func (op BinaryOperator) Instruction(typ NumericType) string {
 		} else {
 			return "shr"
 		}
+
+	case BinCeq:
+		return "ceq"
+	case BinCne:
+		return "cne"
+	case BinClt:
+		if typ.Signed() {
+			return "cslt"
+		} else {
+			return "cult"
+		}
+	case BinCgt:
+		if typ.Signed() {
+			return "csgt"
+		} else {
+			return "cugt"
+		}
+	case BinCle:
+		if typ.Signed() {
+			return "csle"
+		} else {
+			return "cule"
+		}
+	case BinCge:
+		if typ.Signed() {
+			return "csge"
+		} else {
+			return "cuge"
+		}
 	}
 	panic("Invalid binary operator")
+}
+
+func (e BooleanExpr) GenExpression(c *Compiler) Operand {
+	t := e.TypeOf(c).Concrete().(NumericType)
+
+	l := e.L.GenExpression(c)
+	v := c.Temporary()
+	c.Insn(v, t.IRBaseTypeName(), "copy", l)
+
+	longB := c.Block()
+	shortB := c.Block()
+	c.Insn(0, 0, e.Op.Instruction(), v, longB, shortB)
+
+	c.StartBlock(longB)
+	r := e.R.GenExpression(c)
+	c.Insn(v, t.IRBaseTypeName(), "copy", r)
+
+	c.StartBlock(shortB)
+
+	return v
+}
+
+var _ = [1]int{0}[BooleanOperatorMax-3] // Assert correct number of binary operators
+func (op BooleanOperator) Instruction() string {
+	switch op {
+	case BoolAnd:
+		return "jz"
+	case BoolOr:
+		return "jnz"
+	}
+	panic("Invalid boolean operator")
 }
 
 func (e IntegerExpr) GenExpression(c *Compiler) Operand {

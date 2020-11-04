@@ -246,6 +246,17 @@ func init() {
 		}
 	}
 
+	boolean := func(prec int, p *parser, tok Token, left Expression) Expression {
+		var op BooleanOperator
+		switch tok.S {
+		case "&&":
+			op = BoolAnd
+		case "||":
+			op = BoolOr
+		}
+		return BooleanExpr{op, left, p.parseExpression(prec)}
+	}
+
 	mutate := func(prec int, p *parser, tok Token, left Expression) Expression {
 		binOp := tok.S[:len(tok.S)-1]
 		if l, ok := left.(LValue); !ok {
@@ -277,6 +288,16 @@ func init() {
 		TAmp:   {PrecBitwise, binary},
 		TShl:   {PrecShift, binary},
 		TShr:   {PrecShift, binary},
+
+		TCeq:     {PrecCompare, binary},
+		TCne:     {PrecCompare, binary},
+		TLess:    {PrecCompare, binary},
+		TGreater: {PrecCompare, binary},
+		TCle:     {PrecCompare, binary},
+		TCge:     {PrecCompare, binary},
+
+		TLand: {PrecLand, boolean},
+		TLor:  {PrecLor, boolean},
 
 		TMadd:  {PrecAssign, mutate},
 		TMsub:  {PrecAssign, mutate},

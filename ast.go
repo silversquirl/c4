@@ -102,6 +102,12 @@ type BinaryExpr struct {
 }
 type BinaryOperator int
 
+type BooleanExpr struct {
+	Op   BooleanOperator
+	L, R Expression
+}
+type BooleanOperator int
+
 type IntegerExpr string
 type FloatExpr string
 type StringExpr string

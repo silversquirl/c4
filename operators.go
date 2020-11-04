@@ -1,5 +1,6 @@
 //go:generate stringer -type PrefixOperator -linecomment
 //go:generate stringer -type BinaryOperator -linecomment
+//go:generate stringer -type BooleanOperator -linecomment
 package main
 
 const (
@@ -28,5 +29,21 @@ const (
 	BinShl // <<
 	BinShr // >>
 
+	BinCeq // ==
+	BinCne // !=
+	BinClt // <
+	BinCgt // >
+	BinCle // <=
+	BinCge // >=
+
 	BinaryOperatorMax
+)
+
+const (
+	_ BooleanOperator = iota
+
+	BoolAnd // &&
+	BoolOr  // ||
+
+	BooleanOperatorMax
 )

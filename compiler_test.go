@@ -118,6 +118,50 @@ func TestArithmetic(t *testing.T) {
 	`)
 }
 
+func TestComparison(t *testing.T) {
+	testMainCompile(t, `
+		4 == 2
+		4 != 2
+		4 < 2
+		4 > 2
+		4 <= 2
+		4 >= 2
+
+		return 0
+	`, `
+		%t1 =l ceq 4, 2
+		%t2 =l cne 4, 2
+		%t3 =l cslt 4, 2
+		%t4 =l csgt 4, 2
+		%t5 =l csle 4, 2
+		%t6 =l csge 4, 2
+
+		ret 0
+	`)
+}
+
+func TestBoolean(t *testing.T) {
+	testMainCompile(t, `
+		4 && 2
+		4 || 2
+		return 0
+	`, `
+		%t1 =l copy 4
+		jz %t1, @b1, @b2
+	@b1
+		%t1 =l copy 2
+	@b2
+
+		%t2 =l copy 4
+		jnz %t2, @b3, @b4
+	@b3
+		%t2 =l copy 2
+	@b4
+
+		ret 0
+	`)
+}
+
 func TestNestedArithmetic(t *testing.T) {
 	testMainCompile(t, `return (1 + 10*2) * 2`, `
 		%t1 =l mul 10, 2

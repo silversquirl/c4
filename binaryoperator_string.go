@@ -18,12 +18,18 @@ func _() {
 	_ = x[BinAnd-8]
 	_ = x[BinShl-9]
 	_ = x[BinShr-10]
-	_ = x[BinaryOperatorMax-11]
+	_ = x[BinCeq-11]
+	_ = x[BinCne-12]
+	_ = x[BinClt-13]
+	_ = x[BinCgt-14]
+	_ = x[BinCle-15]
+	_ = x[BinCge-16]
+	_ = x[BinaryOperatorMax-17]
 }
 
-const _BinaryOperator_name = "+-*/%|^&<<>>BinaryOperatorMax"
+const _BinaryOperator_name = "+-*/%|^&<<>>==!=<><=>=BinaryOperatorMax"
 
-var _BinaryOperator_index = [...]uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 29}
+var _BinaryOperator_index = [...]uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 17, 18, 20, 22, 39}
 
 func (i BinaryOperator) String() string {
 	i -= 1

@@ -131,7 +131,9 @@ func (e PrefixExpr) Format(indent int) string {
 	return e.Op.String() + "(" + e.V.Format(indent) + ")"
 }
 func (e BinaryExpr) Format(indent int) string {
-	// TODO: smarter spacing/parenthesizing
+	return fmt.Sprintf("(%s %s %s)", e.L.Format(indent), e.Op, e.R.Format(indent))
+}
+func (e BooleanExpr) Format(indent int) string {
 	return fmt.Sprintf("(%s %s %s)", e.L.Format(indent), e.Op, e.R.Format(indent))
 }
 
