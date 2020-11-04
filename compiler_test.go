@@ -51,7 +51,11 @@ func testCompile(t *testing.T, code, ir string) {
 		if end0 && end1 {
 			return
 		} else if end0 || end1 {
-			t.Fatal("Generated and expected IRs are of different length")
+			ir := "Generated"
+			if end1 {
+				ir = "Expected"
+			}
+			t.Fatalf("%s IR ends at bytes %d, %d\n%s!!%s", ir, i0, i1, ir0[:i0], ir0[i0:])
 		}
 
 		if i0 == 0 {
@@ -254,6 +258,44 @@ func TestTypeAlias(t *testing.T) {
 
 			ret 0
 		}
+	`)
+}
+
+func TestStruct(t *testing.T) {
+	testCompile(t, `
+		type Foo struct { a, b I32; c I64 }
+		type Bar struct { a, b, c I8 }
+		fn fooFn(_ Foo)
+		fn barFn(_ Bar)
+		pub fn main() I32 {
+			var foo Foo
+			fooFn(foo)
+			var bar Bar
+			barFn(bar)
+		}
+	`, `
+		export function w $main() {
+		@start
+			%t1 =l alloc8 16
+			storew 0, %t1
+			%t2 =l add %t1, 4
+			storew 0, %t2
+			%t3 =l add %t1, 8
+			storel 0, %t3
+
+			call $fooFn(:w2l %t1)
+
+			%t4 =l alloc4 3
+			storeb 0, %t4
+			%t5 =l add %t4, 1
+			storeb 0, %t5
+			%t6 =l add %t4, 2
+			storeb 0, %t6
+
+			call $barFn(:b3 %t4)
+		}
+		type :b3 = { b 3 }
+		type :w2l = { w 2, l }
 	`)
 }
 

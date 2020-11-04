@@ -243,7 +243,9 @@ const (
 	TKif       // 'if'
 	TKpub      // 'pub'
 	TKreturn   // 'return'
+	TKstruct   // 'struct'
 	TKtype     // 'type'
+	TKunion    // 'union'
 	TKvar      // 'var'
 	TKvariadic // 'variadic'
 	TKeywordEnd

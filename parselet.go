@@ -301,24 +301,19 @@ func init() {
 	}
 }
 
-func (p *parser) parseVarTypes() VarsDecl {
-	names := []string{p.require(TIdent).S}
+func (p *parser) parseVarTypes() (d VarsDecl) {
 	for {
+		d.Names = append(d.Names, p.require(TIdent).S)
 		if !p.accept(TComma) {
 			break
 		}
-		if p.peek() != TIdent {
-			break
-		}
-		names = append(names, p.next().S)
 	}
 
-	ty := p.parseType()
-	if ty == nil {
+	d.Ty = p.parseType()
+	if d.Ty == nil {
 		p.errExpect("type")
 	}
-
-	return VarsDecl{names, ty}
+	return
 }
 
 func (p *parser) parseType() TypeExpr {
@@ -330,10 +325,20 @@ func (p *parser) parseType() TypeExpr {
 }
 
 func init() {
+	composite := func(p *parser) (fields []VarDecl) {
+		p.require(TLBrace)
+		for l := p.list(TSemi, TRBrace); l.next(); {
+			d := p.parseVarTypes()
+			fields = append(fields, d.Decls()...)
+		}
+		return
+	}
+
 	typeParselets = map[TokenType]typeParselet{
 		TType: func(p *parser, tok Token) TypeExpr {
 			return NamedTypeExpr(tok.S)
 		},
+
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
 			if to == nil {
@@ -342,10 +347,12 @@ func init() {
 			p.require(TRSquare)
 			return PointerTypeExpr{to}
 		},
+
 		TKfn: func(p *parser, tok Token) TypeExpr {
 			t := FuncTypeExpr{}
 			p.require(TLParen)
 			for l := p.list(TComma, TRParen); l.next(); {
+				// FIXME: doesn't work with multiple params per type
 				p.accept(TIdent)
 				ty := p.parseType()
 				if ty == nil {
@@ -355,6 +362,13 @@ func init() {
 			}
 			t.Ret = p.parseType()
 			return t
+		},
+
+		TKstruct: func(p *parser, tok Token) TypeExpr {
+			return StructTypeExpr(composite(p))
+		},
+		TKunion: func(p *parser, tok Token) TypeExpr {
+			return UnionTypeExpr(composite(p))
 		},
 	}
 }

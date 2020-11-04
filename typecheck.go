@@ -94,3 +94,18 @@ func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {
 	}
 	return FuncType{fun.Var, params, ret}
 }
+
+func compositeGet(c *Compiler, composite []VarDecl) CompositeType {
+	fields := make([]Field, len(composite))
+	for i, field := range composite {
+		fields[i].Name = field.Name
+		fields[i].Ty = field.Ty.Get(c)
+	}
+	return CompositeType(fields)
+}
+func (s StructTypeExpr) Get(c *Compiler) ConcreteType {
+	return StructType{compositeGet(c, []VarDecl(s))}
+}
+func (u UnionTypeExpr) Get(c *Compiler) ConcreteType {
+	return UnionType{compositeGet(c, []VarDecl(u))}
+}

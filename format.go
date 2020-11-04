@@ -151,3 +151,9 @@ func (fun FuncTypeExpr) Format() string {
 	}
 	return "fn(" + strings.Join(params, ", ") + ")" + ret
 }
+func (s StructTypeExpr) Format() string {
+	return s.Get(nil).Format()
+}
+func (u UnionTypeExpr) Format() string {
+	return u.Get(nil).Format()
+}

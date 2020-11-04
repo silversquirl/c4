@@ -10,10 +10,10 @@ func (f Function) GenToplevel(c *Compiler) {
 	params := make([]IRParam, len(f.Param))
 	for i, param := range f.Param {
 		params[i].Name = param.Name
-		params[i].Ty = param.Ty.Get(c).IRTypeName()
+		params[i].Ty = param.Ty.Get(c).IRTypeName(c)
 	}
 
-	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName())
+	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName(c))
 	defer c.EndFunction()
 
 	for _, stmt := range f.Body {
@@ -131,7 +131,7 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 	call := CallOperand{f, make([]TypedOperand, len(e.Args))}
 	for i, arg := range e.Args {
 		// TODO: type-check arguments
-		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName()
+		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName(c)
 		call.Args[i].Op = arg.GenExpression(c)
 	}
 
@@ -147,31 +147,31 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 
 func genPtrStore(ptr, val Operand, ty NumericType, c *Compiler) {
 	// TODO: make extensible
-	c.Insn(0, 0, "store"+ty.IRTypeName(), val, ptr)
+	c.Insn(0, 0, "store"+ty.IRTypeName(c), val, ptr)
 }
 func genPtrLoad(ptr Operand, ty NumericType, c *Compiler) Operand {
 	op := "load"
-	if ty.IRTypeName() != string(ty.IRBaseTypeName()) {
-		if ty.(NumericType).Signed() {
+	if ty.IRTypeName(c) != string(ty.IRBaseTypeName()) {
+		if ty.Signed() {
 			op += "s"
 		} else {
 			op += "u"
 		}
 	}
-	op += ty.IRTypeName()
+	op += ty.IRTypeName(c)
 
 	tmp := c.Temporary()
 	c.Insn(tmp, ty.IRBaseTypeName(), op, ptr)
 	return tmp
 }
 func genLValueExpr(lv LValue, c *Compiler) Operand {
-	ty, ok := lv.TypeOf(c).Concrete().(NumericType)
-	if !ok {
-		panic("Attempted load of non-numeric type")
-	}
-
 	ptr := lv.GenPointer(c)
-	return genPtrLoad(ptr, ty, c)
+	switch ty := lv.TypeOf(c).Concrete().(type) {
+	case NumericType:
+		return genPtrLoad(ptr, ty, c)
+	default:
+		return ptr
+	}
 }
 
 func (e VarExpr) GenExpression(c *Compiler) Operand {
@@ -196,7 +196,7 @@ func (e PrefixExpr) GenExpression(c *Compiler) Operand {
 	t := e.TypeOf(c).Concrete().(NumericType)
 	v := e.V.GenExpression(c)
 	tmp := c.Temporary()
-	op, arg0 := e.Op.Instruction(t)
+	op, arg0 := e.Op.Instruction(c, t)
 	if arg0 == nil {
 		c.Insn(tmp, t.IRBaseTypeName(), op, v)
 	} else {
@@ -204,10 +204,10 @@ func (e PrefixExpr) GenExpression(c *Compiler) Operand {
 	}
 	return tmp
 }
-func (op PrefixOperator) Instruction(ty NumericType) (string, Operand) {
+func (op PrefixOperator) Instruction(c *Compiler, ty NumericType) (string, Operand) {
 	switch op {
 	case PrefNot:
-		return "ceq" + ty.IRTypeName(), IRInt(0)
+		return "ceq" + ty.IRTypeName(c), IRInt(0)
 	case PrefInv:
 		return "xor", IRInt(-1)
 	case PrefNeg:
@@ -273,4 +273,41 @@ func (e FloatExpr) GenExpression(c *Compiler) Operand {
 }
 func (e StringExpr) GenExpression(c *Compiler) Operand {
 	return c.String(string(e))
+}
+
+func (p PrimitiveType) GenZero(c *Compiler, loc Operand) {
+	c.Insn(0, 0, "store"+p.IRTypeName(c), IRInt(0), loc)
+}
+func (p PointerType) GenZero(c *Compiler, loc Operand) {
+	c.Insn(0, 0, "storel", IRInt(0), loc)
+}
+func (f FuncType) GenZero(c *Compiler, loc Operand) {
+	panic("Attempted to zero a function type")
+}
+
+func (s StructType) GenZero(c *Compiler, loc Operand) {
+	off := 0
+	for _, field := range s.CompositeType {
+		floc := loc
+		if off > 0 {
+			ftmp := c.Temporary()
+			c.Insn(ftmp, 'l', "add", loc, IRInt(off))
+			floc = ftmp
+		}
+		field.Ty.GenZero(c, floc)
+		off += field.Ty.Metrics().Size
+	}
+}
+
+func (u UnionType) GenZero(c *Compiler, loc Operand) {
+	var maxTy ConcreteType
+	var maxSize int
+	for _, field := range u.CompositeType {
+		size := field.Ty.Metrics().Size
+		if size > maxSize {
+			maxTy = field.Ty
+			maxSize = size
+		}
+	}
+	maxTy.GenZero(c, loc)
 }

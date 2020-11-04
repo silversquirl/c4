@@ -13,10 +13,11 @@ type Compiler struct {
 	blk  Block
 	temp Temporary
 
-	typs map[string]ConcreteType
-	vars map[string]Variable
-	strs []IRString
-	strM map[string]int // Map from string to index of entry in strs
+	typs map[string]ConcreteType // Type names
+	comp []CompositeLayout       // Composite types
+	vars map[string]Variable     // Variable names
+	strs []IRString              // String constants
+	strM map[string]int          // Map from string to index of entry in strs
 }
 
 func NewCompiler(w io.Writer) *Compiler {
@@ -38,6 +39,7 @@ func NewCompiler(w io.Writer) *Compiler {
 
 			"Bool": TypeBool,
 		},
+		nil,
 		make(map[string]Variable),
 		nil,
 		make(map[string]int),
@@ -53,7 +55,7 @@ func (c *Compiler) Writef(format string, args ...interface{}) {
 	fmt.Fprintf(c.w, format, args...)
 }
 
-func (c *Compiler) Insn(retVar Temporary, retType rune, opcode string, operands ...Operand) {
+func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands ...Operand) {
 	b := &strings.Builder{}
 	b.WriteString(opcode)
 	for i, operand := range operands {
@@ -131,6 +133,22 @@ func (c *Compiler) Type(name string) ConcreteType {
 	return c.typs[name]
 }
 
+func (c *Compiler) CompositeType(layout CompositeLayout) string {
+	var i int
+	for i = range c.comp {
+		o := c.comp[i].lexicalOrder(layout)
+		if o == 0 {
+			return layout.ident()
+		} else if o > 0 {
+			break
+		}
+	}
+	c.comp = append(c.comp, nil)
+	copy(c.comp[i+1:], c.comp[i:])
+	c.comp[i] = layout
+	return layout.ident()
+}
+
 func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {
 	if _, ok := c.vars[name]; ok {
 		panic("Variable already exists")
@@ -160,7 +178,7 @@ func (c *Compiler) DeclareLocal(name string, typ ConcreteType) Variable {
 		panic("Invalid alignment")
 	}
 	c.Insn(loc, 'l', op, IRInt(m.Size))
-	c.Insn(0, 0, "store"+typ.IRTypeName(), IRInt(0), loc)
+	typ.GenZero(c, loc)
 
 	return v
 }
@@ -187,6 +205,68 @@ func (c *Compiler) Finish() {
 	for i, str := range c.strs {
 		c.Writef("data $str%d = %s\n", i, str)
 	}
+
+	// Write all composite types
+	for _, layout := range c.comp {
+		layout.GenType(c)
+	}
+}
+
+type CompositeLayout []CompositeEntry
+type CompositeEntry struct {
+	Ty byte
+	N  int
+}
+
+func irTypeLen(ty byte) int {
+	switch ty {
+	case 'b':
+		return 1
+	case 'h':
+		return 2
+	case 'w', 's':
+		return 4
+	case 'l', 'd':
+		return 8
+	}
+	panic("Invalid IR type: '" + string(ty) + "'")
+}
+
+func (a CompositeLayout) lexicalOrder(b CompositeLayout) int {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i].Ty != b[i].Ty {
+			return irTypeLen(a[i].Ty) - irTypeLen(b[i].Ty)
+		} else if a[i].N != b[i].N {
+			return a[i].N - b[i].N
+		}
+	}
+	return 0
+}
+
+func (l CompositeLayout) ident() string {
+	b := &strings.Builder{}
+	b.WriteByte(':')
+	for _, entry := range l {
+		b.WriteByte(entry.Ty)
+		if entry.N > 1 {
+			fmt.Fprintf(b, "%d", entry.N)
+		}
+	}
+	return b.String()
+}
+
+func (l CompositeLayout) GenType(c *Compiler) {
+	c.Writef("type %s = { ", l.ident())
+	for i, entry := range l {
+		if i > 0 {
+			c.Writef(", ")
+		}
+		c.Writef("%c", entry.Ty)
+		if entry.N > 1 {
+			c.Writef(" %d", entry.N)
+		}
+	}
+	c.Writef(" }\n")
 }
 
 type Operand interface {

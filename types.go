@@ -33,11 +33,11 @@ type ConcreteType interface {
 	// Source code representing the type
 	Format() string
 	// The QBE name of the base, extended or aggregate type corresponding to this type
-	IRTypeName() string
+	IRTypeName(c *Compiler) string
 	// The QBE name of the base type closest to this type, if any
-	IRBaseTypeName() rune
-	// QBE code to declare the type, if any
-	IRTypeDecl() string
+	IRBaseTypeName() byte
+	// Generate code to zero a value of the type
+	GenZero(c *Compiler, loc Operand)
 }
 
 // TypeMetrics stores the size and alignment of a type. If a type's metrics are zero, a value of that type cannot be created.
@@ -155,7 +155,7 @@ func (p PrimitiveType) Format() string {
 	panic("Invalid primitive type")
 }
 
-func (p PrimitiveType) IRTypeName() string {
+func (p PrimitiveType) IRTypeName(c *Compiler) string {
 	switch p {
 	case TypeI64, TypeU64:
 		return "l"
@@ -173,7 +173,7 @@ func (p PrimitiveType) IRTypeName() string {
 	panic("Invalid primitive type")
 }
 
-func (p PrimitiveType) IRBaseTypeName() rune {
+func (p PrimitiveType) IRBaseTypeName() byte {
 	switch p {
 	case TypeI64, TypeU64:
 		return 'l'
@@ -185,10 +185,6 @@ func (p PrimitiveType) IRBaseTypeName() rune {
 		return 's'
 	}
 	panic("Invalid primitive type")
-}
-
-func (p PrimitiveType) IRTypeDecl() string {
-	return ""
 }
 
 const (
@@ -231,14 +227,11 @@ func (_ PointerType) Metrics() TypeMetrics {
 func (p PointerType) Format() string {
 	return "*" + p.To.Format()
 }
-func (_ PointerType) IRTypeName() string {
+func (_ PointerType) IRTypeName(c *Compiler) string {
 	return "l"
 }
-func (_ PointerType) IRBaseTypeName() rune {
+func (_ PointerType) IRBaseTypeName() byte {
 	return 'l'
-}
-func (_ PointerType) IRTypeDecl() string {
-	return ""
 }
 
 type FuncType struct {
@@ -281,14 +274,11 @@ func (f FuncType) Format() string {
 	}
 	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Format()
 }
-func (_ FuncType) IRTypeName() string {
+func (_ FuncType) IRTypeName(c *Compiler) string {
 	return ""
 }
-func (_ FuncType) IRBaseTypeName() rune {
+func (_ FuncType) IRBaseTypeName() byte {
 	return 0
-}
-func (_ FuncType) IRTypeDecl() string {
-	return ""
 }
 
 type NamedType struct {
@@ -298,5 +288,124 @@ type NamedType struct {
 
 func (a NamedType) Equals(other Type) bool {
 	b, ok := other.(NamedType)
-	return ok && a.Name == b.Name && a.ConcreteType.Equals(b.ConcreteType)
+	return ok && a.Name == b.Name
+}
+
+type Field struct {
+	Name string
+	Ty   ConcreteType
+}
+type CompositeType []Field
+type StructType struct{ CompositeType }
+type UnionType struct{ CompositeType }
+
+func (comp CompositeType) composite() CompositeType { return comp }
+func (comp CompositeType) layout(c *Compiler) (layout CompositeLayout) {
+	var ent CompositeEntry
+	for _, field := range comp {
+		var entries []CompositeEntry
+		switch ty := field.Ty.(type) {
+		case interface{ layout() CompositeLayout }:
+			entries = ty.layout()
+		default:
+			entries = []CompositeEntry{
+				{ty.IRTypeName(c)[0], 1},
+			}
+		}
+
+		for _, entry := range entries {
+			if ent.N > 0 && ent.Ty != entry.Ty {
+				layout = append(layout, ent)
+				ent.N = 0
+			}
+			ent.Ty = entry.Ty
+			ent.N += entry.N
+		}
+	}
+	if ent.N > 0 {
+		layout = append(layout, ent)
+	}
+	return layout
+}
+
+func (a CompositeType) equals(b CompositeType) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !a[i].Ty.Equals(b[i].Ty) {
+			return false
+		}
+	}
+	return true
+
+}
+func (comp CompositeType) IsConcrete() bool {
+	return true
+}
+func (comp CompositeType) format() string {
+	b := &strings.Builder{}
+	b.WriteString("{\n")
+	for _, field := range comp {
+		b.WriteByte('\t')
+		b.WriteString(field.Name)
+		b.WriteByte(' ')
+		b.WriteString(field.Ty.Format())
+		b.WriteByte('\n')
+	}
+	b.WriteByte('}')
+	return b.String()
+}
+func (comp CompositeType) IRBaseTypeName() byte {
+	return 0
+}
+
+func (a StructType) Equals(other Type) bool {
+	b, ok := other.(StructType)
+	return ok && a.equals(b.CompositeType)
+}
+func (s StructType) Concrete() ConcreteType {
+	return s
+}
+func (s StructType) Metrics() (m TypeMetrics) {
+	for _, field := range s.CompositeType {
+		fm := field.Ty.Metrics()
+		if m.Align < fm.Align {
+			m.Align = fm.Align
+		}
+		m.Size += fm.Size
+	}
+	return
+}
+func (s StructType) Format() string {
+	return "struct " + s.format()
+}
+func (s StructType) IRTypeName(c *Compiler) string {
+	return c.CompositeType(s.layout(c))
+}
+
+func (a UnionType) Equals(other Type) bool {
+	b, ok := other.(UnionType)
+	return ok && a.equals(b.CompositeType)
+}
+func (u UnionType) Concrete() ConcreteType {
+	return u
+}
+func (u UnionType) Metrics() (m TypeMetrics) {
+	for _, field := range u.CompositeType {
+		fm := field.Ty.Metrics()
+		if m.Align < fm.Align {
+			m.Align = fm.Align
+		}
+		if m.Size < fm.Size {
+			m.Size = fm.Size
+		}
+	}
+	return
+}
+func (u UnionType) Format() string {
+	return "union " + u.format()
+}
+func (u UnionType) IRTypeName(c *Compiler) string {
+	return c.CompositeType(u.layout(c))
 }

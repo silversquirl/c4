@@ -117,3 +117,5 @@ type FuncTypeExpr struct {
 	Param []TypeExpr
 	Ret   TypeExpr
 }
+type StructTypeExpr []VarDecl
+type UnionTypeExpr []VarDecl
