@@ -272,9 +272,9 @@ func init() {
 		TSlash: {PrecMul, binary},
 		TPerc:  {PrecMul, binary},
 
-		TPipe:  {PrecOr, binary},
-		TCaret: {PrecXor, binary},
-		TAmp:   {PrecAnd, binary},
+		TPipe:  {PrecBitwise, binary},
+		TCaret: {PrecBitwise, binary},
+		TAmp:   {PrecBitwise, binary},
 		TShl:   {PrecShift, binary},
 		TShr:   {PrecShift, binary},
 

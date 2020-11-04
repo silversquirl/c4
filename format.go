@@ -101,7 +101,7 @@ func (r ReturnStmt) Format(indent int) string {
 	return "return " + r.Value.Format(indent)
 }
 func (e AssignExpr) Format(indent int) string {
-	return e.L.Format(indent) + " = " + e.R.Format(indent)
+	return "(" + e.L.Format(indent) + " = " + e.R.Format(indent) + ")"
 }
 func (e MutateExpr) Format(indent int) string {
 	return fmt.Sprintf("%s %s= %s", e.L.Format(indent), e.Op, e.R.Format(indent))
@@ -128,7 +128,7 @@ func (e DerefExpr) Format(indent int) string {
 }
 
 func (e PrefixExpr) Format(indent int) string {
-	return e.Op.String() + e.V.Format(indent)
+	return e.Op.String() + "(" + e.V.Format(indent) + ")"
 }
 func (e BinaryExpr) Format(indent int) string {
 	// TODO: smarter spacing/parenthesizing

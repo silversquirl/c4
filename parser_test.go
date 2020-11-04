@@ -10,32 +10,37 @@ func testParser(code string) *parser {
 	return &parser{<-toks, toks}
 }
 
-func testParse(t *testing.T, code, expect string) {
-	prog, err := Parse(code)
-	if err != nil {
-		t.Fatal("Parse error:", err)
+func checkParse(t *testing.T, a, b string) {
+	if eq, ai, bi := CodeCompare(a, b); !eq {
+		t.Errorf("Generated and expected code does not match at bytes %d, %d\n%s!!%s", ai, bi, a[:ai], a[ai:])
 	}
+}
+
+func testProg(t *testing.T, code, expect string) {
+	prog := testParser(code).parseProgram()
 	checkParse(t, prog.Format(0), expect)
 }
 
-func checkParse(t *testing.T, a, b string) {
-	if eq, ai, bi := CodeCompare(a, b); !eq {
-		t.Fatalf("Generated and expected code does not match at bytes %d, %d\n%s!!%s", ai, bi, a[:ai], a[ai:])
-	}
+func testStmt(t *testing.T, code, expect string) {
+	stmt := testParser(code).parseStatement()
+	checkParse(t, stmt.Format(0), expect)
 }
 
-func TestExpression(t *testing.T) {
-	expr := testParser("0").parseExpression(0)
-	checkParse(t, "0", expr.Format(0))
+func testExpr(t *testing.T, code, expect string) {
+	expr := testParser(code).parseExpression(0)
+	checkParse(t, expr.Format(0), expect)
 }
 
 func TestStatement(t *testing.T) {
-	stmt := testParser("return 0").parseStatement()
-	checkParse(t, "return 0", stmt.Format(0))
+	testStmt(t, "return 0", "return 0")
+}
+
+func TestExpression(t *testing.T) {
+	testExpr(t, "0", "0")
 }
 
 func TestMinimal(t *testing.T) {
-	testParse(t, `
+	testProg(t, `
 		pub fn main() I32 {
 			return 0
 		}
@@ -47,7 +52,7 @@ func TestMinimal(t *testing.T) {
 }
 
 func TestHelloWorld(t *testing.T) {
-	testParse(t, `
+	testProg(t, `
 		pub fn main() I32 {
 			puts("Hello, world!")
 			return 0
@@ -58,4 +63,28 @@ func TestHelloWorld(t *testing.T) {
 			return 0
 		}
 	`)
+}
+
+func TestPrecedence(t *testing.T) {
+	testExpr(t, "-f(a, b)", "-(f(a, b))")
+	testExpr(t, "-a * b", "(-(a) * b)")
+	testExpr(t, "a + f(a, b)", "(a + f(a, b))")
+	testExpr(t, "a + b * c", "(a + (b * c))")
+	testExpr(t, "a << b + c", "(a << (b + c))")
+	testExpr(t, "a & b << c", "(a & (b << c))")
+	testExpr(t, "a = b | c", "(a = (b | c))")
+	testExpr(t, "(a = b) | c", "((a = b) | c)")
+}
+
+func TestAssociativity(t *testing.T) {
+	testExpr(t, "a + b + c", "((a + b) + c)")
+	testExpr(t, "a + b - c", "((a + b) - c)")
+	testExpr(t, "a * b * c", "((a * b) * c)")
+	testExpr(t, "a * b / c", "((a * b) / c)")
+	testExpr(t, "a << b << c", "((a << b) << c)")
+	testExpr(t, "a << b >> c", "((a << b) >> c)")
+	testExpr(t, "a & b & c", "((a & b) & c)")
+	testExpr(t, "a ^ b & c", "((a ^ b) & c)")
+	testExpr(t, "a | b ^ c", "((a | b) ^ c)")
+	testExpr(t, "a = b = c", "(a = (b = c))")
 }

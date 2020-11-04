@@ -6,16 +6,16 @@ const (
 	PrecGroup
 	PrecAssign
 
-	PrecPrefix
+	PrecLor
+	PrecLand
+	PrecCompare
 
+	PrecBitwise
+	PrecShift
 	PrecSum
 	PrecMul
 
-	PrecOr
-	PrecXor
-	PrecAnd
-	PrecShift
-
+	PrecPrefix
 	PrecCall
 	PrecLiteral
 )
