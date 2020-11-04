@@ -3,6 +3,7 @@ package main
 type Program []Toplevel
 
 type Toplevel interface {
+	FormattableCode
 	GenToplevel(c *Compiler)
 }
 
@@ -41,7 +42,7 @@ type TypeAlias struct {
 }
 
 type Statement interface {
-	Format() string
+	FormattableCode
 	GenStatement(c *Compiler)
 }
 
@@ -61,7 +62,7 @@ type ReturnStmt struct {
 
 type ExprStmt struct{ Expression }
 type Expression interface {
-	Format() string
+	FormattableCode
 	TypeOf(c *Compiler) Type
 	GenExpression(c *Compiler) Operand
 }
@@ -106,8 +107,8 @@ type FloatExpr string
 type StringExpr string
 
 type TypeExpr interface {
+	FormattableCode
 	Get(c *Compiler) ConcreteType
-	Format() string
 }
 
 type NamedTypeExpr string

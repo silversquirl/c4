@@ -7,10 +7,6 @@ import (
 	"testing"
 )
 
-func spc(ch byte) bool {
-	return ch == ' ' || ch == '\t' || ch == '\n'
-}
-
 func testCompile(t *testing.T, code, ir string) {
 	toks := make(chan Token)
 	go Tokenize(code, toks)
@@ -30,46 +26,9 @@ func testCompile(t *testing.T, code, ir string) {
 	c := NewCompiler(b)
 	c.Compile(prog)
 
-	// Compare without taking into account indentation
-	ir0 := []byte(b.String())
-	ir1 := []byte(ir)
-	var i0, i1 int
-	for {
-		spc0 := false
-		for i0 < len(ir0) && spc(ir0[i0]) {
-			i0++
-			spc0 = true
-		}
-		spc1 := false
-		for i1 < len(ir1) && spc(ir1[i1]) {
-			i1++
-			spc1 = true
-		}
-
-		end0 := i0 >= len(ir0)
-		end1 := i1 >= len(ir1)
-		if end0 && end1 {
-			return
-		} else if end0 || end1 {
-			ir := "Generated"
-			if end1 {
-				ir = "Expected"
-			}
-			t.Fatalf("%s IR ends at bytes %d, %d\n%s!!%s", ir, i0, i1, ir0[:i0], ir0[i0:])
-		}
-
-		if i0 == 0 {
-			spc0 = true
-		}
-		if i1 == 0 {
-			spc1 = true
-		}
-
-		if spc0 != spc1 || ir0[i0] != ir1[i1] {
-			t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s!!%s", i0, i1, ir0[:i0], ir0[i0:])
-		}
-		i0++
-		i1++
+	gen := b.String()
+	if eq, ai, bi := CodeCompare(gen, ir); !eq {
+		t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s!!%s", ai, bi, gen[:ai], gen[ai:])
 	}
 }
 

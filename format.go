@@ -6,110 +6,142 @@ import (
 	"unicode/utf8"
 )
 
-func fmtBlock(body []Statement) string {
+type FormattableCode interface {
+	Format(indent int) string
+}
+
+func (prog Program) Format(indent int) string {
 	b := &strings.Builder{}
-	b.WriteByte('{')
-	for _, s := range body {
-		b.WriteRune('\n')
-		b.WriteString(s.Format())
+	for _, tl := range prog {
+		b.WriteString(tl.Format(indent))
+		b.WriteString(newLine(indent))
 	}
-	b.WriteByte('}')
 	return b.String()
 }
 
-func (d VarDecl) Format() string {
-	return "var " + d.Name + " " + d.Ty.Format()
-}
-func (d VarsDecl) Format() string {
-	return "var " + strings.Join(d.Names, ", ") + " " + d.Ty.Format()
+func (f Function) Format(indent int) string {
+	b := &strings.Builder{}
+	if f.Pub {
+		b.WriteString("pub ")
+	}
+	b.WriteString("fn ")
+	b.WriteString(f.Name)
+
+	b.WriteByte('(')
+	for i, param := range f.Param {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(param.Name)
+		b.WriteByte(' ')
+		b.WriteString(param.Ty.Format(indent))
+	}
+	b.WriteByte(')')
+
+	if f.Ret != nil {
+		b.WriteByte(' ')
+		b.WriteString(f.Ret.Format(indent))
+	}
+
+	b.WriteByte(' ')
+	b.WriteString(fmtBlock(indent, f.Body))
+
+	return b.String()
 }
 
-func (t TypeDef) Format() string {
-	return "type " + t.Name + " " + t.Ty.Format()
+func (d VarDecl) Format(indent int) string {
+	return "var " + d.Name + " " + d.Ty.Format(indent)
 }
-func (t TypeAlias) Format() string {
-	return "type " + t.Name + " = " + t.Ty.Format()
+func (d VarsDecl) Format(indent int) string {
+	return "var " + strings.Join(d.Names, ", ") + " " + d.Ty.Format(indent)
 }
 
-func (i IfStmt) Format() string {
-	s := "if " + i.Cond.Format() + " " + fmtBlock(i.Then)
+func (t TypeDef) Format(indent int) string {
+	return "type " + t.Name + " " + t.Ty.Format(indent)
+}
+func (t TypeAlias) Format(indent int) string {
+	return "type " + t.Name + " = " + t.Ty.Format(indent)
+}
+
+func (i IfStmt) Format(indent int) string {
+	s := "if " + i.Cond.Format(indent) + " " + fmtBlock(indent, i.Then)
 	if i.Else != nil {
-		s += " else " + fmtBlock(i.Else)
+		s += " else " + fmtBlock(indent, i.Else)
 	}
 	return s
 }
 
-func (f ForStmt) Format() string {
+func (f ForStmt) Format(indent int) string {
 	b := &strings.Builder{}
 	b.WriteString("for ")
 	if f.Init != nil || f.Step != nil {
 		if f.Init != nil {
-			b.WriteString(f.Init.Format())
+			b.WriteString(f.Init.Format(indent))
 		}
 		b.WriteByte(';')
 		if f.Cond != nil {
 			b.WriteByte(' ')
-			b.WriteString(f.Cond.Format())
+			b.WriteString(f.Cond.Format(indent))
 		}
 		b.WriteByte(';')
 		if f.Step != nil {
 			b.WriteByte(' ')
-			b.WriteString(f.Step.Format())
+			b.WriteString(f.Step.Format(indent))
 		}
 		b.WriteByte(' ')
 	} else if f.Cond != nil {
-		b.WriteString(f.Cond.Format())
+		b.WriteString(f.Cond.Format(indent))
 		b.WriteByte(' ')
 	}
-	b.WriteString(fmtBlock(f.Body))
+	b.WriteString(fmtBlock(indent, f.Body))
 	return b.String()
 }
 
-func (r ReturnStmt) Format() string {
-	return "return " + r.Value.Format()
+func (r ReturnStmt) Format(indent int) string {
+	return "return " + r.Value.Format(indent)
 }
-func (e AssignExpr) Format() string {
-	return e.L.Format() + " = " + e.R.Format()
+func (e AssignExpr) Format(indent int) string {
+	return e.L.Format(indent) + " = " + e.R.Format(indent)
 }
-func (e MutateExpr) Format() string {
-	return fmt.Sprintf("%s %s= %s", e.L.Format(), e.Op, e.R.Format())
+func (e MutateExpr) Format(indent int) string {
+	return fmt.Sprintf("%s %s= %s", e.L.Format(indent), e.Op, e.R.Format(indent))
 }
 
-func (e CallExpr) Format() string {
+func (e CallExpr) Format(indent int) string {
 	args := make([]string, len(e.Args))
 	for i, arg := range e.Args {
-		args[i] = arg.Format()
+		args[i] = arg.Format(indent)
 	}
-	return e.Func.Format() + "(" + strings.Join(args, ", ") + ")"
+	return e.Func.Format(indent) + "(" + strings.Join(args, ", ") + ")"
 }
 
-func (e VarExpr) Format() string {
+func (e VarExpr) Format(indent int) string {
 	return string(e)
 }
 
-func (e RefExpr) Format() string {
-	return "&" + e.V.Format()
+func (e RefExpr) Format(indent int) string {
+	return "&" + e.V.Format(indent)
 }
 
-func (e DerefExpr) Format() string {
-	return "[" + e.V.Format() + "]"
+func (e DerefExpr) Format(indent int) string {
+	return "[" + e.V.Format(indent) + "]"
 }
 
-func (e PrefixExpr) Format() string {
-	return e.Op.String() + e.V.Format()
+func (e PrefixExpr) Format(indent int) string {
+	return e.Op.String() + e.V.Format(indent)
 }
-func (e BinaryExpr) Format() string {
+func (e BinaryExpr) Format(indent int) string {
 	// TODO: smarter spacing/parenthesizing
-	return fmt.Sprintf("(%s %s %s)", e.L.Format(), e.Op, e.R.Format())
+	return fmt.Sprintf("(%s %s %s)", e.L.Format(indent), e.Op, e.R.Format(indent))
 }
 
-func (e IntegerExpr) Format() string {
+func (e IntegerExpr) Format(indent int) string {
 	return string(e)
 }
-func (e FloatExpr) Format() string {
+func (e FloatExpr) Format(indent int) string {
 	return string(e)
 }
-func (e StringExpr) Format() string {
+func (e StringExpr) Format(indent int) string {
 	b := &strings.Builder{}
 	b.WriteRune('"')
 	str := []byte(e)
@@ -134,26 +166,48 @@ func (e StringExpr) Format() string {
 	return b.String()
 }
 
-func (name NamedTypeExpr) Format() string {
+func (name NamedTypeExpr) Format(indent int) string {
 	return string(name)
 }
-func (ptr PointerTypeExpr) Format() string {
-	return "[" + ptr.To.Format() + "]"
+func (ptr PointerTypeExpr) Format(indent int) string {
+	return "[" + ptr.To.Format(indent) + "]"
 }
-func (fun FuncTypeExpr) Format() string {
+func (fun FuncTypeExpr) Format(indent int) string {
 	params := make([]string, len(fun.Param))
 	for i, param := range fun.Param {
-		params[i] = param.Format()
+		params[i] = param.Format(indent)
 	}
 	var ret string
 	if fun.Ret != nil {
-		ret = " " + fun.Ret.Format()
+		ret = " " + fun.Ret.Format(indent)
 	}
 	return "fn(" + strings.Join(params, ", ") + ")" + ret
 }
-func (s StructTypeExpr) Format() string {
-	return s.Get(nil).Format()
+func (s StructTypeExpr) Format(indent int) string {
+	return s.Get(nil).Format(indent)
 }
-func (u UnionTypeExpr) Format() string {
-	return u.Get(nil).Format()
+func (u UnionTypeExpr) Format(indent int) string {
+	return u.Get(nil).Format(indent)
+}
+
+func fmtBlock(indent int, body []Statement) string {
+	b := &strings.Builder{}
+	b.WriteByte('{')
+	for _, s := range body {
+		b.WriteString(newLine(indent))
+		b.WriteString(s.Format(indent + 1))
+	}
+	b.WriteString(newLine(indent))
+	b.WriteByte('}')
+	return b.String()
+}
+
+func newLine(indent int) string {
+	b := make([]byte, indent+1)
+	for indent > 0 {
+		indent--
+		b[indent] = '\t'
+	}
+	b[len(b)-1] = '\n'
+	return string(b)
 }

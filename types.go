@@ -31,7 +31,7 @@ type ConcreteType interface {
 	Type
 	Metrics() TypeMetrics
 	// Source code representing the type
-	Format() string
+	FormattableCode
 	// The QBE name of the base, extended or aggregate type corresponding to this type
 	IRTypeName(c *Compiler) string
 	// The QBE name of the base type closest to this type, if any
@@ -124,7 +124,7 @@ func (p PrimitiveType) Metrics() TypeMetrics {
 	panic("Invalid primitive type")
 }
 
-func (p PrimitiveType) Format() string {
+func (p PrimitiveType) Format(indent int) string {
 	switch p {
 	case TypeI64:
 		return "I64"
@@ -224,8 +224,8 @@ func (p PointerType) Concrete() ConcreteType {
 func (_ PointerType) Metrics() TypeMetrics {
 	return TypeMetrics{8, 8}
 }
-func (p PointerType) Format() string {
-	return "*" + p.To.Format()
+func (p PointerType) Format(indent int) string {
+	return "*" + p.To.Format(indent)
 }
 func (_ PointerType) IRTypeName(c *Compiler) string {
 	return "l"
@@ -267,12 +267,12 @@ func (f FuncType) Concrete() ConcreteType {
 func (f FuncType) Metrics() TypeMetrics {
 	return TypeMetrics{}
 }
-func (f FuncType) Format() string {
+func (f FuncType) Format(indent int) string {
 	params := make([]string, len(f.Param))
 	for i, param := range f.Param {
-		params[i] = param.Format()
+		params[i] = param.Format(indent)
 	}
-	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Format()
+	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Format(indent)
 }
 func (_ FuncType) IRTypeName(c *Compiler) string {
 	return ""
@@ -316,14 +316,14 @@ func (a CompositeType) equals(b CompositeType) bool {
 func (comp CompositeType) IsConcrete() bool {
 	return true
 }
-func (comp CompositeType) format() string {
+func (comp CompositeType) format(indent int) string {
 	b := &strings.Builder{}
 	b.WriteString("{\n")
 	for _, field := range comp {
 		b.WriteByte('\t')
 		b.WriteString(field.Name)
 		b.WriteByte(' ')
-		b.WriteString(field.Ty.Format())
+		b.WriteString(field.Ty.Format(indent))
 		b.WriteByte('\n')
 	}
 	b.WriteByte('}')
@@ -350,8 +350,8 @@ func (s StructType) Metrics() (m TypeMetrics) {
 	}
 	return
 }
-func (s StructType) Format() string {
-	return "struct " + s.format()
+func (s StructType) Format(indent int) string {
+	return "struct " + s.format(indent)
 }
 func (s StructType) IRTypeName(c *Compiler) string {
 	return c.CompositeType(s.layout(c))
@@ -384,8 +384,8 @@ func (u UnionType) Concrete() ConcreteType {
 func (u UnionType) Metrics() TypeMetrics {
 	return u.largest().Ty.Metrics()
 }
-func (u UnionType) Format() string {
-	return "union " + u.format()
+func (u UnionType) Format(indent int) string {
+	return "union " + u.format(indent)
 }
 func (u UnionType) IRTypeName(c *Compiler) string {
 	return c.CompositeType(u.layout(c))
