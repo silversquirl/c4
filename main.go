@@ -15,7 +15,7 @@ func main() {
 
 	out := flag.String("o", "", "output `filename`")
 	as := flag.String("as", "as", "`name` of assembler to use")
-	ld := flag.String("ld", "ld", "`name` of linker to use")
+	ld := flag.String("ld", "cc", "`name` of linker to use")
 	verbose := flag.Bool("v", false, "verbose output")
 	flag.Parse()
 
