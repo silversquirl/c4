@@ -221,9 +221,10 @@ func (e PrefixExpr) GenExpression(c *Compiler) Operand {
 
 var _ = [1]int{0}[PrefixOperatorMax-5] // Assert correct number of prefix operators
 func (op PrefixOperator) Instruction(c *Compiler, ty NumericType) (string, Operand) {
+	ity := string(ty.IRBaseTypeName())
 	switch op {
 	case PrefNot:
-		return "ceq" + ty.IRTypeName(c), IRInt(0)
+		return "ceq" + ity, IRInt(0)
 	case PrefInv:
 		return "xor", IRInt(-1)
 	case PrefNeg:
@@ -259,7 +260,8 @@ func (e BinaryExpr) GenExpression(c *Compiler) Operand {
 }
 
 var _ = [1]int{0}[BinaryOperatorMax-17] // Assert correct number of binary operators
-func (op BinaryOperator) Instruction(typ NumericType) string {
+func (op BinaryOperator) Instruction(ty NumericType) string {
+	ity := string(ty.IRBaseTypeName())
 	switch op {
 	case BinAdd:
 		return "add"
@@ -268,13 +270,13 @@ func (op BinaryOperator) Instruction(typ NumericType) string {
 	case BinMul:
 		return "mul"
 	case BinDiv:
-		if typ.Signed() {
+		if ty.Signed() {
 			return "div"
 		} else {
 			return "udiv"
 		}
 	case BinMod:
-		if typ.Signed() {
+		if ty.Signed() {
 			return "rem"
 		} else {
 			return "urem"
@@ -289,39 +291,39 @@ func (op BinaryOperator) Instruction(typ NumericType) string {
 	case BinShl:
 		return "shl"
 	case BinShr:
-		if typ.Signed() {
+		if ty.Signed() {
 			return "sar"
 		} else {
 			return "shr"
 		}
 
 	case BinCeq:
-		return "ceq"
+		return "ceq" + ity
 	case BinCne:
-		return "cne"
+		return "cne" + ity
 	case BinClt:
-		if typ.Signed() {
-			return "cslt"
+		if ty.Signed() {
+			return "cslt" + ity
 		} else {
-			return "cult"
+			return "cult" + ity
 		}
 	case BinCgt:
-		if typ.Signed() {
-			return "csgt"
+		if ty.Signed() {
+			return "csgt" + ity
 		} else {
-			return "cugt"
+			return "cugt" + ity
 		}
 	case BinCle:
-		if typ.Signed() {
-			return "csle"
+		if ty.Signed() {
+			return "csle" + ity
 		} else {
-			return "cule"
+			return "cule" + ity
 		}
 	case BinCge:
-		if typ.Signed() {
-			return "csge"
+		if ty.Signed() {
+			return "csge" + ity
 		} else {
-			return "cuge"
+			return "cuge" + ity
 		}
 	}
 	panic("Invalid binary operator")

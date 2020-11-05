@@ -146,12 +146,12 @@ func TestComparison(t *testing.T) {
 		4 <= 2
 		4 >= 2
 	`, `
-		%t1 =l ceq 4, 2
-		%t2 =l cne 4, 2
-		%t3 =l cslt 4, 2
-		%t4 =l csgt 4, 2
-		%t5 =l csle 4, 2
-		%t6 =l csge 4, 2
+		%t1 =l ceql 4, 2
+		%t2 =l cnel 4, 2
+		%t3 =l csltl 4, 2
+		%t4 =l csgtl 4, 2
+		%t5 =l cslel 4, 2
+		%t6 =l csgel 4, 2
 	`)
 }
 
