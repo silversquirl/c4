@@ -234,12 +234,27 @@ func (op PrefixOperator) Instruction(c *Compiler, ty NumericType) (string, Opera
 	panic("Invalid prefix operator")
 }
 
+func ptrMul(c *Compiler, v Operand, ty PointerType) Operand {
+	t := c.Temporary()
+	c.Insn(t, ty.IRBaseTypeName(), BinMul.Instruction(ty), IRInt(ty.To.Metrics().Size), v)
+	return t
+}
 func (e BinaryExpr) GenExpression(c *Compiler) Operand {
-	t := e.TypeOf(c).Concrete().(NumericType)
+	ty := e.TypeOf(c).Concrete().(NumericType)
+	lty, lptr := e.L.TypeOf(c).(PointerType)
+	rty, rptr := e.R.TypeOf(c).(PointerType)
+
 	l := e.L.GenExpression(c)
+	if !lptr && rptr {
+		l = ptrMul(c, l, rty)
+	}
 	r := e.R.GenExpression(c)
+	if lptr && !rptr {
+		r = ptrMul(c, r, lty)
+	}
+
 	v := c.Temporary()
-	c.Insn(v, t.IRBaseTypeName(), e.Op.Instruction(t), l, r)
+	c.Insn(v, ty.IRBaseTypeName(), e.Op.Instruction(ty), l, r)
 	return v
 }
 

@@ -61,7 +61,10 @@ func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
 	if !Compatible(ltyp, rtyp) {
-		panic("Operands of binary expression are incompatible")
+		panic("Operands of binary expression are incompatible:\n\t\t" +
+			rtyp.Format(2) +
+			"\n\tis not\n\t\t" +
+			ltyp.Format(2))
 	}
 	return ltyp
 }

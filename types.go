@@ -7,14 +7,19 @@ func Compatible(a, b Type) bool {
 		return true
 	}
 	switch a.(type) {
-	case IntLitType, FloatLitType:
+	case IntLitType:
 		switch b.(type) {
-		case IntLitType, FloatLitType, PrimitiveType:
+		case IntLitType, FloatLitType, NumericType:
 			return true
 		}
-	case PrimitiveType:
+	case FloatLitType:
 		switch b.(type) {
 		case IntLitType, FloatLitType:
+			return true
+		}
+	case NumericType:
+		switch b.(type) {
+		case IntLitType:
 			return true
 		}
 	}
@@ -25,13 +30,12 @@ type Type interface {
 	Equals(other Type) bool
 	IsConcrete() bool
 	Concrete() ConcreteType
+	Format(indent int) string
 }
 
 type ConcreteType interface {
 	Type
 	Metrics() TypeMetrics
-	// Source code representing the type
-	FormattableCode
 	// The QBE name of the base, extended or aggregate type corresponding to this type
 	IRTypeName(c *Compiler) string
 	// The QBE name of the base type closest to this type, if any
@@ -63,6 +67,9 @@ func (_ IntLitType) IsConcrete() bool {
 func (_ IntLitType) Concrete() ConcreteType {
 	return TypeI64
 }
+func (_ IntLitType) Format(indent int) string {
+	return "integer literal"
+}
 
 // The type of decimal numeric literals
 type FloatLitType struct{}
@@ -76,6 +83,9 @@ func (_ FloatLitType) IsConcrete() bool {
 }
 func (_ FloatLitType) Concrete() ConcreteType {
 	return TypeF64
+}
+func (_ FloatLitType) Format(indent int) string {
+	return "float literal"
 }
 
 type PrimitiveType int

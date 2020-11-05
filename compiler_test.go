@@ -609,13 +609,20 @@ func TestReferenceVariable(t *testing.T) {
 func TestDereferencePointer(t *testing.T) {
 	testMainCompile(t, `
 		var p [I32]
+		[p + 1]
 		return [p]
 	`, `
 		%t1 =l alloc8 8
 		storel 0, %t1
+
 		%t2 =l loadl %t1
-		%t3 =w loadw %t2
-		ret %t3
+		%t3 =l mul 4, 1
+		%t4 =l add %t2, %t3
+		%t5 =w loadw %t4
+
+		%t6 =l loadl %t1
+		%t7 =w loadw %t6
+		ret %t7
 	`)
 }
 
