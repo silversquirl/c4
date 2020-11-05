@@ -12,9 +12,15 @@ fn fib(n U64) U64 {
 }
 
 variadic fn printf(fmt [I8]) I32
-pub fn main() I32 {
+fn atol(a [I8]) U64 // This signature is a lie but no casts yet
+pub fn main(argc I32, argv [[I8]]) I32 {
 	var count U64
-	count = 10
+	if argc > 1 {
+		count = atol([argv + 1])
+	} else {
+		count = 10
+	}
+
 	printf("%dth fib = %d\n", count, fib(count))
 	return 0
 }
