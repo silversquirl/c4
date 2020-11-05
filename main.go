@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,6 +18,7 @@ func main() {
 	as := flag.String("as", "as", "`name` of assembler to use")
 	ld := flag.String("ld", "cc", "`name` of linker to use")
 	verbose := flag.Bool("v", false, "verbose output")
+	irOut := flag.Bool("i", false, "output intermediate representation of the program")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -26,6 +28,11 @@ func main() {
 	if *out == "" {
 		file := flag.Arg(0)
 		*out = strings.TrimSuffix(file, filepath.Ext(file))
+	}
+
+	link := true
+	if *irOut {
+		link = false
 	}
 
 	tmpDir, err := ioutil.TempDir("", "c4-build-*")
@@ -62,43 +69,52 @@ func main() {
 		}
 		objFile.Close() // I wish I could pass the fd directly to as
 
-		qbeCmd := exec.Command("qbe")
-		qbeCmd.Stdin = qbeR
-		qbeCmd.Stdout = asW
-		qbeCmd.Stderr = os.Stderr
-		if err := qbeCmd.Start(); err != nil {
-			log.Fatal(err)
-		}
+		var qbeCmd, asCmd *exec.Cmd
+		if *irOut {
+			go io.Copy(os.Stdout, qbeR)
+		} else {
+			qbeCmd = exec.Command("qbe")
+			qbeCmd.Stdin = qbeR
+			qbeCmd.Stdout = asW
+			qbeCmd.Stderr = os.Stderr
+			if err := qbeCmd.Start(); err != nil {
+				log.Fatal(err)
+			}
 
-		asCmd := exec.Command(*as, "-o", objFile.Name(), "-")
-		asCmd.Stdin = asR
-		asCmd.Stdout = objFile
-		asCmd.Stderr = os.Stderr
-		if err := asCmd.Start(); err != nil {
-			log.Fatal(err)
+			asCmd = exec.Command(*as, "-o", objFile.Name(), "-")
+			asCmd.Stdin = asR
+			asCmd.Stdout = objFile
+			asCmd.Stderr = os.Stderr
+			if err := asCmd.Start(); err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		if err := NewCompiler(qbeW).Compile(prog); err != nil {
 			log.Fatal(err)
 		}
 		qbeW.Close()
-		if err := qbeCmd.Wait(); err != nil {
-			log.Fatal(err)
-		}
-		asW.Close()
-		if err := asCmd.Wait(); err != nil {
-			log.Fatal(err)
+		if !*irOut {
+			if err := qbeCmd.Wait(); err != nil {
+				log.Fatal(err)
+			}
+			asW.Close()
+			if err := asCmd.Wait(); err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		objs = append(objs, objFile.Name())
 	}
 
-	if *verbose {
-		log.Print("LD ", *out)
-	}
-	ldCmd := exec.Command(*ld, append(objs, "-o", *out)...)
-	ldCmd.Stderr = os.Stderr
-	if err := ldCmd.Run(); err != nil {
-		log.Fatal(err)
+	if link {
+		if *verbose {
+			log.Print("LD ", *out)
+		}
+		ldCmd := exec.Command(*ld, append(objs, "-o", *out)...)
+		ldCmd.Stderr = os.Stderr
+		if err := ldCmd.Run(); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
