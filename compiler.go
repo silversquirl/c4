@@ -95,16 +95,29 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 	}
 
 	pbuild := &strings.Builder{}
+	ptemps := make([]Temporary, len(params))
 	for i, param := range params {
 		if i > 0 {
 			pbuild.WriteString(", ")
 		}
-		pbuild.WriteString(param.Ty)
+		pbuild.WriteString(param.Ty.IRTypeName(c))
 		pbuild.WriteRune(' ')
-		pbuild.WriteString(param.Name)
+		ptemps[i] = c.Temporary()
+		pbuild.WriteString(ptemps[i].Operand())
 	}
 
 	c.Writef("%sfunction %s $%s(%s) {\n@start\n", prefix, retType, name, pbuild)
+
+	// Add args to locals
+	for i, param := range params {
+		loc := c.Temporary()
+		c.vars[param.Name] = Variable{loc, param.Ty}
+		if param.Ty.IRBaseTypeName() != 0 {
+			// If it's a primitive, we need to alloc and copy
+			c.allocLocal(loc, param.Ty)
+			c.Insn(0, 0, "store"+param.Ty.IRTypeName(c), ptemps[i], loc)
+		}
+	}
 }
 
 func (c *Compiler) EndFunction() {
@@ -117,7 +130,7 @@ func (c *Compiler) EndFunction() {
 
 type IRParam struct {
 	Name string
-	Ty   string
+	Ty   ConcreteType
 }
 
 func (c *Compiler) StartBlock(block Block) {
@@ -176,15 +189,8 @@ func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {
 	c.vars[name] = v
 	return v
 }
-func (c *Compiler) DeclareLocal(name string, typ ConcreteType) Variable {
-	if _, ok := c.vars[name]; ok {
-		panic("Variable already exists")
-	}
-	loc := c.Temporary()
-	v := Variable{loc, typ}
-	c.vars[name] = v
-
-	m := typ.Metrics()
+func (c *Compiler) allocLocal(loc Temporary, ty ConcreteType) {
+	m := ty.Metrics()
 	op := ""
 	switch {
 	case m.Align <= 4:
@@ -197,8 +203,17 @@ func (c *Compiler) DeclareLocal(name string, typ ConcreteType) Variable {
 		panic("Invalid alignment")
 	}
 	c.Insn(loc, 'l', op, IRInt(m.Size))
-	typ.GenZero(c, loc)
+}
+func (c *Compiler) DeclareLocal(name string, ty ConcreteType) Variable {
+	if _, ok := c.vars[name]; ok {
+		panic("Variable already exists")
+	}
+	loc := c.Temporary()
+	v := Variable{loc, ty}
+	c.vars[name] = v
 
+	c.allocLocal(loc, ty)
+	ty.GenZero(c, loc)
 	return v
 }
 func (c *Compiler) Variable(name string) Variable {

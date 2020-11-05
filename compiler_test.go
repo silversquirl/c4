@@ -10,18 +10,21 @@ import (
 func testCompile(t *testing.T, code, ir string) {
 	toks := make(chan Token)
 	go Tokenize(code, toks)
+
+	phase := "Parse"
 	p := parser{<-toks, toks}
 	defer func() {
 		switch e := recover().(type) {
 		case nil:
 		case string:
-			t.Fatalf("Parse error: %s\n%s", e, debug.Stack())
+			t.Fatalf("%s error: %s\n%s", phase, e, debug.Stack())
 		default:
 			panic(e)
 		}
 	}()
 	prog := p.parseProgram()
 
+	phase = "Compile"
 	b := &strings.Builder{}
 	c := NewCompiler(b)
 	c.compile(prog)
@@ -36,6 +39,30 @@ func testMainCompile(t *testing.T, code, ir string) {
 	code = "pub fn main() I32 {\n" + code + "\n}\n"
 	ir = "export function w $main() {\n@start\n" + ir + "\n}\n"
 	testCompile(t, code, ir)
+}
+
+func TestFunctionArgs(t *testing.T) {
+	testCompile(t, `
+		fn foo(a, b I32, c U64) U64 {
+			a = b
+			return c
+		}
+	`, `
+		function l $foo(w %t1, w %t2, l %t3) {
+		@start
+			%t4 =l alloc4 4
+			storew %t1, %t4
+			%t5 =l alloc4 4
+			storew %t2, %t5
+			%t6 =l alloc8 8
+			storel %t3, %t6
+
+			%t7 =w loadw %t5
+			storew %t7, %t4
+			%t8 =l loadl %t6
+			ret %t8
+		}
+	`)
 }
 
 func TestReturn0(t *testing.T) {

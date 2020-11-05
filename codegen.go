@@ -10,7 +10,7 @@ func (f Function) GenToplevel(c *Compiler) {
 	params := make([]IRParam, len(f.Param))
 	for i, param := range f.Param {
 		params[i].Name = param.Name
-		params[i].Ty = param.Ty.Get(c).IRTypeName(c)
+		params[i].Ty = param.Ty.Get(c)
 	}
 
 	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName(c))
