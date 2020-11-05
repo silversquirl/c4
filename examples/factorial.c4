@@ -1,0 +1,14 @@
+fn fac(n U64) U64 {
+	var x U64
+	x = 1
+	for ; n; n -= 1 {
+		x *= n
+	}
+	return x
+}
+
+variadic fn printf(fmt [I8]) I32
+pub fn main() I32 {
+	printf("5! = %d\n", fac(5))
+	return 0
+}

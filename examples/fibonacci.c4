@@ -1,0 +1,20 @@
+fn fib(n U64) U64 {
+	var a, b U64
+	a = 0
+	b = 1
+	for ; n; n -= 1 {
+		var c U64
+		c = a + b
+		a = b
+		b = c
+	}
+	return a
+}
+
+variadic fn printf(fmt [I8]) I32
+pub fn main() I32 {
+	var count U64
+	count = 10
+	printf("%dth fib = %d\n", count, fib(count))
+	return 0
+}
