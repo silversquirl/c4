@@ -24,7 +24,7 @@ func testCompile(t *testing.T, code, ir string) {
 
 	b := &strings.Builder{}
 	c := NewCompiler(b)
-	c.Compile(prog)
+	c.compile(prog)
 
 	gen := b.String()
 	if eq, ai, bi := CodeCompare(gen, ir); !eq {

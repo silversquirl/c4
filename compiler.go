@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -46,7 +47,21 @@ func NewCompiler(w io.Writer) *Compiler {
 	}
 }
 
-func (c *Compiler) Compile(prog Program) {
+func (c *Compiler) Compile(prog Program) (err error) {
+	defer func() {
+		switch e := recover().(type) {
+		case nil:
+		case string:
+			err = errors.New(e)
+		default:
+			panic(e)
+		}
+	}()
+	c.compile(prog)
+	return
+}
+
+func (c *Compiler) compile(prog Program) {
 	prog.GenProgram(c)
 	c.Finish()
 }

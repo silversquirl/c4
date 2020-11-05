@@ -78,7 +78,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		NewCompiler(qbeW).Compile(prog)
+		if err := NewCompiler(qbeW).Compile(prog); err != nil {
+			log.Fatal(err)
+		}
 		qbeW.Close()
 		if err := qbeCmd.Wait(); err != nil {
 			log.Fatal(err)
