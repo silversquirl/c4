@@ -7,18 +7,28 @@ func (p Program) GenProgram(c *Compiler) {
 }
 
 func (f Function) GenToplevel(c *Compiler) {
+	ty := FuncType{}
+	ty.Param = make([]ConcreteType, len(f.Param))
 	params := make([]IRParam, len(f.Param))
 	for i, param := range f.Param {
 		params[i].Name = param.Name
-		params[i].Ty = param.Ty.Get(c)
+		ty.Param[i] = param.Ty.Get(c)
+		params[i].Ty = ty.Param[i]
 	}
 
-	c.StartFunction(f.Pub, f.Name, params, f.Ret.Get(c).IRTypeName(c))
+	var ret string
+	if f.Ret != nil {
+		ty.Ret = f.Ret.Get(c)
+		ret = ty.Ret.IRTypeName(c)
+	}
+	c.StartFunction(f.Pub, f.Name, params, ret)
 	defer c.EndFunction()
 
 	for _, stmt := range f.Body {
 		stmt.GenStatement(c)
 	}
+
+	c.DeclareGlobal(f.Name, ty)
 }
 
 func (d VarsDecl) GenStatement(c *Compiler) {
@@ -90,8 +100,12 @@ func (f ForStmt) GenStatement(c *Compiler) {
 }
 
 func (r ReturnStmt) GenStatement(c *Compiler) {
-	v := r.Value.GenExpression(c)
-	c.Insn(0, 0, "ret", v)
+	if r.Value != nil {
+		v := r.Value.GenExpression(c)
+		c.Insn(0, 0, "ret", v)
+	} else {
+		c.Insn(0, 0, "ret")
+	}
 }
 
 func (e ExprStmt) GenStatement(c *Compiler) {

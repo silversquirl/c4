@@ -36,8 +36,8 @@ func testCompile(t *testing.T, code, ir string) {
 }
 
 func testMainCompile(t *testing.T, code, ir string) {
-	code = "pub fn main() I32 {\n" + code + "\n}\n"
-	ir = "export function w $main() {\n@start\n" + ir + "\n}\n"
+	code = "pub fn main() I32 {\n" + code + "\n\treturn 0\n}\n"
+	ir = "export function w $main() {\n@start\n" + ir + "\n\tret 0\n}\n"
 	testCompile(t, code, ir)
 }
 
@@ -66,7 +66,7 @@ func TestFunctionArgs(t *testing.T) {
 }
 
 func TestReturn0(t *testing.T) {
-	testMainCompile(t, `return 0`, `ret 0`)
+	testMainCompile(t, "", "")
 }
 
 func TestPrefixExpr(t *testing.T) {
@@ -75,15 +75,11 @@ func TestPrefixExpr(t *testing.T) {
 		^3
 		-(3)
 		+(3)
-
-		return 0
 	`, `
 		%t1 =l ceql 0, 3
 		%t2 =l xor -1, 3
 		%t3 =l sub 0, 3
 		%t4 =l copy 3
-
-		ret 0
 	`)
 }
 
@@ -126,8 +122,6 @@ func TestArithmetic(t *testing.T) {
 		4 & 2
 		4 << 2
 		4 >> 2
-
-		return 0
 	`, `
 		%t1 =l add 4, 2
 		%t2 =l sub 4, 2
@@ -140,8 +134,6 @@ func TestArithmetic(t *testing.T) {
 		%t8  =l and 4, 2
 		%t9  =l shl 4, 2
 		%t10 =l sar 4, 2
-
-		ret 0
 	`)
 }
 
@@ -153,8 +145,6 @@ func TestComparison(t *testing.T) {
 		4 > 2
 		4 <= 2
 		4 >= 2
-
-		return 0
 	`, `
 		%t1 =l ceq 4, 2
 		%t2 =l cne 4, 2
@@ -162,8 +152,6 @@ func TestComparison(t *testing.T) {
 		%t4 =l csgt 4, 2
 		%t5 =l csle 4, 2
 		%t6 =l csge 4, 2
-
-		ret 0
 	`)
 }
 
@@ -171,7 +159,6 @@ func TestBoolean(t *testing.T) {
 	testMainCompile(t, `
 		4 && 2
 		4 || 2
-		return 0
 	`, `
 		%t1 =l copy 4
 		jz %t1, @b1, @b2
@@ -184,8 +171,6 @@ func TestBoolean(t *testing.T) {
 	@b3
 		%t2 =l copy 2
 	@b4
-
-		ret 0
 	`)
 }
 
@@ -302,6 +287,7 @@ func TestStruct(t *testing.T) {
 			fooFn(foo)
 			var bar Bar
 			barFn(bar)
+			return 0
 		}
 	`, `
 		export function w $main() {
@@ -323,6 +309,8 @@ func TestStruct(t *testing.T) {
 			storeb 0, %t6
 
 			call $barFn(:b3 %t4)
+
+			ret 0
 		}
 		type :b3 = { b 3 }
 		type :w2l = { w 2, l }
@@ -340,6 +328,7 @@ func TestUnion(t *testing.T) {
 			fooFn(foo)
 			var bar Bar
 			barFn(bar)
+			return 0
 		}
 	`, `
 		export function w $main() {
@@ -351,6 +340,8 @@ func TestUnion(t *testing.T) {
 			%t2 =l alloc4 1
 			storeb 0, %t2
 			call $barFn(:b %t2)
+
+			ret 0
 		}
 		type :b = { b }
 		type :l = { l }
@@ -630,15 +621,28 @@ func TestDereferencePointer(t *testing.T) {
 
 func TestFunctionCall(t *testing.T) {
 	testCompile(t, `
-		fn printi(i I64)
+		fn foo(i I64)
+		fn bar(i I64) {
+			foo(i)
+		}
 		pub fn main() I32 {
-			printi(42)
+			foo(42)
+			bar(42)
 			return 0
 		}
 	`, `
+		function $bar(l %t1) {
+		@start
+			%t2 =l alloc8 8
+			storel %t1, %t2
+			%t3 =l loadl %t2
+			call $foo(l %t3)
+			ret
+		}
 		export function w $main() {
 		@start
-			call $printi(l 42)
+			call $foo(l 42)
+			call $bar(l 42)
 			ret 0
 		}
 	`)

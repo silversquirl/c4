@@ -13,6 +13,7 @@ type Compiler struct {
 
 	blk  Block
 	temp Temporary
+	ret  bool // True if the last emitted instruction was `ret`
 
 	typs map[string]ConcreteType // Type names
 	comp []CompositeLayout       // Composite types
@@ -23,7 +24,7 @@ type Compiler struct {
 
 func NewCompiler(w io.Writer) *Compiler {
 	return &Compiler{
-		w, 0, 0,
+		w, 0, 0, false,
 		map[string]ConcreteType{
 			"I64": TypeI64,
 			"I32": TypeI32,
@@ -86,6 +87,8 @@ func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands 
 	} else {
 		c.Writef("\t%s =%c %s\n", retVar, retType, b)
 	}
+
+	c.ret = opcode == "ret"
 }
 
 func (c *Compiler) StartFunction(export bool, name string, params []IRParam, retType string) {
@@ -106,7 +109,10 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 		pbuild.WriteString(ptemps[i].Operand())
 	}
 
-	c.Writef("%sfunction %s $%s(%s) {\n@start\n", prefix, retType, name, pbuild)
+	if retType != "" {
+		retType += " "
+	}
+	c.Writef("%sfunction %s$%s(%s) {\n@start\n", prefix, retType, name, pbuild)
 
 	// Add args to locals
 	for i, param := range params {
@@ -121,11 +127,15 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 }
 
 func (c *Compiler) EndFunction() {
+	if !c.ret {
+		c.Insn(0, 0, "ret")
+	}
 	c.Writef("}\n")
 
 	// Reset counters
 	c.temp = 0
 	c.blk = 0
+	c.ret = false
 }
 
 type IRParam struct {
@@ -219,7 +229,7 @@ func (c *Compiler) DeclareLocal(name string, ty ConcreteType) Variable {
 func (c *Compiler) Variable(name string) Variable {
 	v, ok := c.vars[name]
 	if !ok {
-		panic("Undefined variable")
+		panic("Undefined variable: " + name)
 	}
 	return v
 }
