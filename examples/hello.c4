@@ -1,0 +1,5 @@
+fn puts(msg [I8]) I32
+pub fn main() I32 {
+	puts("Hello, world!")
+	return 0
+}
