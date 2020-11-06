@@ -90,6 +90,20 @@ func TestFunctionArgs(t *testing.T) {
 	`)
 }
 
+func TestRecursiveFunction(t *testing.T) {
+	testCompile(t, `
+		fn foo() {
+			foo()
+		}
+	`, `
+		function $foo() {
+		@start
+			call $foo()
+			ret
+		}
+	`)
+}
+
 func TestReturn0(t *testing.T) {
 	testMainCompile(t, "", "")
 }

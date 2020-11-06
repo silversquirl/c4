@@ -23,12 +23,11 @@ func (f Function) GenToplevel(c *Compiler) {
 	}
 	c.StartFunction(f.Pub, f.Name, params, ret)
 	defer c.EndFunction()
+	c.DeclareGlobal(f.Name, ty)
 
 	for _, stmt := range f.Body {
 		stmt.GenStatement(c)
 	}
-
-	c.DeclareGlobal(f.Name, ty)
 }
 
 func (d VarsDecl) GenStatement(c *Compiler) {
