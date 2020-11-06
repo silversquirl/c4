@@ -235,7 +235,7 @@ func (_ PointerType) Metrics() TypeMetrics {
 	return TypeMetrics{8, 8}
 }
 func (p PointerType) Format(indent int) string {
-	return "*" + p.To.Format(indent)
+	return "[" + p.To.Format(indent) + "]"
 }
 func (_ PointerType) IRTypeName(c *Compiler) string {
 	return "l"
