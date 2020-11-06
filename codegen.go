@@ -109,6 +109,9 @@ func (r ReturnStmt) GenStatement(c *Compiler) {
 }
 
 func (e ExprStmt) GenStatement(c *Compiler) {
+	if e.TypeOf(c) != nil {
+		panic("Expression returning non-void cannot be used as statement")
+	}
 	e.Expression.GenExpression(c)
 }
 

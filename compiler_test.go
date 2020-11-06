@@ -35,6 +35,31 @@ func testCompile(t *testing.T, code, ir string) {
 	}
 }
 
+func testCompileFailure(t *testing.T, err, code string) {
+	toks := make(chan Token)
+	go Tokenize(code, toks)
+
+	p := parser{<-toks, toks}
+	prog := p.parseProgram()
+
+	b := &strings.Builder{}
+	c := NewCompiler(b)
+
+	defer func() {
+		switch e := recover().(type) {
+		case nil:
+			t.Fatal("No error")
+		case string:
+			if e != err {
+				t.Fatal("Incorrect error:", e)
+			}
+		default:
+			panic(e)
+		}
+	}()
+	c.compile(prog)
+}
+
 func testMainCompile(t *testing.T, code, ir string) {
 	code = "pub fn main() I32 {\n" + code + "\n\treturn 0\n}\n"
 	ir = "export function w $main() {\n@start\n" + ir + "\n\tret 0\n}\n"
@@ -71,10 +96,10 @@ func TestReturn0(t *testing.T) {
 
 func TestPrefixExpr(t *testing.T) {
 	testMainCompile(t, `
-		!3
-		^3
-		-(3)
-		+(3)
+		_ = !3
+		_ = ^3
+		_ = -(3)
+		_ = +(3)
 	`, `
 		%t1 =l ceql 0, 3
 		%t2 =l xor -1, 3
@@ -98,8 +123,6 @@ func TestMutate(t *testing.T) {
 		a += 1; a -= 1; a *= 1; a /= 1
 		a %= 1; a |= 1; a ^= 1; a &= 1
 		a <<= 1; a >>= 1
-		// a &&= 1
-		// a ||= 1
 	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1`+
@@ -111,17 +134,17 @@ func TestMutate(t *testing.T) {
 // TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
 	testMainCompile(t, `
-		4 + 2
-		4 - 2
-		4 * 2
-		4 / 2
-		4 % 2
+		_ = 4 + 2
+		_ = 4 - 2
+		_ = 4 * 2
+		_ = 4 / 2
+		_ = 4 % 2
 
-		4 | 2
-		4 ^ 2
-		4 & 2
-		4 << 2
-		4 >> 2
+		_ = 4 | 2
+		_ = 4 ^ 2
+		_ = 4 & 2
+		_ = 4 << 2
+		_ = 4 >> 2
 	`, `
 		%t1 =l add 4, 2
 		%t2 =l sub 4, 2
@@ -139,12 +162,12 @@ func TestArithmetic(t *testing.T) {
 
 func TestComparison(t *testing.T) {
 	testMainCompile(t, `
-		4 == 2
-		4 != 2
-		4 < 2
-		4 > 2
-		4 <= 2
-		4 >= 2
+		_ = 4 == 2
+		_ = 4 != 2
+		_ = 4 < 2
+		_ = 4 > 2
+		_ = 4 <= 2
+		_ = 4 >= 2
 	`, `
 		%t1 =l ceql 4, 2
 		%t2 =l cnel 4, 2
@@ -157,8 +180,8 @@ func TestComparison(t *testing.T) {
 
 func TestBoolean(t *testing.T) {
 	testMainCompile(t, `
-		4 && 2
-		4 || 2
+		_ = 4 && 2
+		_ = 4 || 2
 	`, `
 		%t1 =l copy 4
 		jz %t1, @b1, @b2
@@ -223,10 +246,10 @@ func TestTypeDef(t *testing.T) {
 		type Bar U64
 		pub fn main() I32 {
 			var foo Foo
-			foo / foo
+			_ = foo / foo
 
 			var bar Bar
-			bar / bar
+			_ = bar / bar
 
 			return 0
 		}
@@ -256,7 +279,7 @@ func TestTypeAlias(t *testing.T) {
 		pub fn main() I32 {
 			var foo Foo
 			var bar I32
-			foo / bar
+			_ = foo / bar
 
 			return 0
 		}
@@ -609,7 +632,7 @@ func TestReferenceVariable(t *testing.T) {
 func TestDereferencePointer(t *testing.T) {
 	testMainCompile(t, `
 		var p [I32]
-		[p + 1]
+		_ = [p + 1]
 		return [p]
 	`, `
 		%t1 =l alloc8 8
@@ -659,12 +682,12 @@ func TestStringLiteral(t *testing.T) {
 	testCompile(t, `
 		fn puts(s [I8]) I32
 		pub fn main() I32 {
-			puts("str0")
-			puts("str0")
-			puts("str1")
-			puts("str1")
-			puts("str2")
-			puts("str2")
+			_ = puts("str0")
+			_ = puts("str0")
+			_ = puts("str1")
+			_ = puts("str1")
+			_ = puts("str2")
+			_ = puts("str2")
 			return 0
 		}
 	`, `
@@ -681,5 +704,20 @@ func TestStringLiteral(t *testing.T) {
 		data $str0 = { b "str0", b 0 }
 		data $str1 = { b "str1", b 0 }
 		data $str2 = { b "str2", b 0 }
+	`)
+}
+
+func TestTypeCheck(t *testing.T) {
+	testCompileFailure(t, "Expression returning non-void cannot be used as statement", `
+		fn f() {
+			4 + 2
+		}
+	`)
+
+	testCompileFailure(t, "Type error in call to f: [I8] is not I32", `
+		fn f(x I32)
+		fn g() {
+			f("")
+		}
 	`)
 }

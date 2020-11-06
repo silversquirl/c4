@@ -1,5 +1,24 @@
 package main
 
+import (
+	"fmt"
+	"strings"
+)
+
+func typeCheck(errCtx string, a, b Type) {
+	if !Compatible(a, b) {
+		as := a.Format(2)
+		bs := b.Format(2)
+		var msg string
+		if strings.ContainsRune(as, '\n') || strings.ContainsRune(bs, '\n') {
+			msg = fmt.Sprintf("Type error in %s:\n\t\t%s\n\tis not\n\t\t%s", errCtx, as, bs)
+		} else {
+			msg = fmt.Sprintf("Type error in %s: %s is not %s", errCtx, as, bs)
+		}
+		panic(msg)
+	}
+}
+
 func (e AssignExpr) typeOf(c *Compiler) Type {
 	if name, ok := e.L.(VarExpr); ok && name == "_" {
 		e.R.TypeOf(c)
@@ -11,9 +30,7 @@ func (e AssignExpr) typeOf(c *Compiler) Type {
 		panic("Lvalue of non-concrete type")
 	}
 	rtyp := e.R.TypeOf(c)
-	if !Compatible(ltyp, rtyp) {
-		panic("Operands of assignment are incompatible")
-	}
+	typeCheck("assignment", rtyp, ltyp)
 	return ltyp
 }
 func (e MutateExpr) typeOf(c *Compiler) Type {
@@ -33,6 +50,10 @@ func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
 }
 func (e CallExpr) TypeOf(c *Compiler) Type {
 	t, _ := e.typeOf(c)
+	errCtx := "call to " + e.Func.Format(0)
+	for i, arg := range e.Args {
+		typeCheck(errCtx, arg.TypeOf(c), t.Param[i])
+	}
 	return t.Ret
 }
 
@@ -67,21 +88,14 @@ func (e PrefixExpr) TypeOf(c *Compiler) Type {
 func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
-	if !Compatible(ltyp, rtyp) {
-		panic("Operands of binary expression are incompatible:\n\t\t" +
-			rtyp.Format(2) +
-			"\n\tis not\n\t\t" +
-			ltyp.Format(2))
-	}
+	typeCheck("binary expression", rtyp, ltyp)
 	return ltyp
 }
 
 func (e BooleanExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
-	if !Compatible(ltyp, rtyp) {
-		panic("Operands of boolean expression are incompatible")
-	}
+	typeCheck("boolean expression", rtyp, ltyp)
 	return ltyp
 }
 
