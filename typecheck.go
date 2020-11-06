@@ -50,9 +50,13 @@ func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
 }
 func (e CallExpr) TypeOf(c *Compiler) Type {
 	t, _ := e.typeOf(c)
+	na, np := len(e.Args), len(t.Param)
+	if na < np || (na > np && !t.Var) {
+		panic(fmt.Sprintf("Incorrect number of arguments in call to %s: expected %d, got %d", e.Func.Format(0), len(t.Param), len(e.Args)))
+	}
 	errCtx := "call to " + e.Func.Format(0)
-	for i, arg := range e.Args {
-		typeCheck(errCtx, arg.TypeOf(c), t.Param[i])
+	for i, par := range t.Param {
+		typeCheck(errCtx, e.Args[i].TypeOf(c), par)
 	}
 	return t.Ret
 }

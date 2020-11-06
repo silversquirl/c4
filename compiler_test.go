@@ -104,6 +104,21 @@ func TestRecursiveFunction(t *testing.T) {
 	`)
 }
 
+func TestVariadicFunction(t *testing.T) {
+	testCompile(t, `
+		variadic fn foo(a I32)
+		fn bar() {
+			foo(1, 2)
+		}
+	`, `
+		function $bar() {
+		@start
+			call $foo(l 1, l 2)
+			ret
+		}
+	`)
+}
+
 func TestReturn0(t *testing.T) {
 	testMainCompile(t, "", "")
 }
