@@ -113,6 +113,10 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 }
 
 func (e AssignExpr) GenExpression(c *Compiler) Operand {
+	if name, ok := e.L.(VarExpr); ok && name == "_" {
+		return e.R.GenExpression(c)
+	}
+
 	// TODO: allow storing non-numeric types
 	ty := e.typeOf(c).Concrete().(NumericType)
 	l := e.L.GenPointer(c)

@@ -1,6 +1,11 @@
 package main
 
 func (e AssignExpr) typeOf(c *Compiler) Type {
+	if name, ok := e.L.(VarExpr); ok && name == "_" {
+		e.R.TypeOf(c)
+		return nil
+	}
+
 	ltyp := e.L.TypeOf(c)
 	if !ltyp.IsConcrete() {
 		panic("Lvalue of non-concrete type")

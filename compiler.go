@@ -42,7 +42,9 @@ func NewCompiler(w io.Writer) *Compiler {
 			"Bool": TypeBool,
 		},
 		nil,
-		make(map[string]Variable),
+		map[string]Variable{
+			"_": {},
+		},
 		nil,
 		make(map[string]int),
 	}
