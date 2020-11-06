@@ -114,14 +114,14 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 
 func (e AssignExpr) GenExpression(c *Compiler) Operand {
 	// TODO: allow storing non-numeric types
-	ty := e.TypeOf(c).Concrete().(NumericType)
+	ty := e.typeOf(c).Concrete().(NumericType)
 	l := e.L.GenPointer(c)
 	r := e.R.GenExpression(c)
 	genPtrStore(l, r, ty, c)
 	return l
 }
 func (e MutateExpr) GenExpression(c *Compiler) Operand {
-	ty := e.TypeOf(c).Concrete().(NumericType)
+	ty := e.typeOf(c).Concrete().(NumericType)
 
 	l := e.L.GenPointer(c)
 	lv := genPtrLoad(l, ty, c)

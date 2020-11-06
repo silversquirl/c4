@@ -1,6 +1,6 @@
 package main
 
-func (e AssignExpr) TypeOf(c *Compiler) Type {
+func (e AssignExpr) typeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	if !ltyp.IsConcrete() {
 		panic("Lvalue of non-concrete type")
@@ -11,9 +11,11 @@ func (e AssignExpr) TypeOf(c *Compiler) Type {
 	}
 	return ltyp
 }
-func (e MutateExpr) TypeOf(c *Compiler) Type {
-	return AssignExpr{e.L, BinaryExpr{e.Op, e.L, e.R}}.TypeOf(c)
+func (e MutateExpr) typeOf(c *Compiler) Type {
+	return AssignExpr{e.L, BinaryExpr{e.Op, e.L, e.R}}.typeOf(c)
 }
+func (e AssignExpr) TypeOf(c *Compiler) Type { e.typeOf(c); return nil }
+func (e MutateExpr) TypeOf(c *Compiler) Type { e.typeOf(c); return nil }
 
 func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
 	switch t := e.Func.TypeOf(c).(type) {
