@@ -300,18 +300,24 @@ func (a NamedType) Equals(other Type) bool {
 	b, ok := other.(NamedType)
 	return ok && a.Name == b.Name
 }
+func (a NamedType) Format(indent int) string {
+	return a.Name
+}
 
 type Field struct {
 	Name string
 	Ty   ConcreteType
 }
-type CompositeType []Field
-type StructType struct{ CompositeType }
-type UnionType struct{ CompositeType }
+type compositeType []Field
+type StructType struct{ compositeType }
+type UnionType struct{ compositeType }
 
-func (comp CompositeType) composite() CompositeType { return comp }
+type CompositeType interface {
+	Field(name string) ConcreteType
+	Offset(name string) int
+}
 
-func (a CompositeType) equals(b CompositeType) bool {
+func (a compositeType) equals(b compositeType) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -323,10 +329,10 @@ func (a CompositeType) equals(b CompositeType) bool {
 	return true
 
 }
-func (comp CompositeType) IsConcrete() bool {
+func (comp compositeType) IsConcrete() bool {
 	return true
 }
-func (comp CompositeType) format(indent int) string {
+func (comp compositeType) format(indent int) string {
 	b := &strings.Builder{}
 	b.WriteString("{\n")
 	for _, field := range comp {
@@ -339,19 +345,27 @@ func (comp CompositeType) format(indent int) string {
 	b.WriteByte('}')
 	return b.String()
 }
-func (comp CompositeType) IRBaseTypeName() byte {
+func (comp compositeType) IRBaseTypeName() byte {
 	return 0
+}
+func (comp compositeType) Field(name string) ConcreteType {
+	for _, field := range comp {
+		if field.Name == name {
+			return field.Ty
+		}
+	}
+	return nil
 }
 
 func (a StructType) Equals(other Type) bool {
 	b, ok := other.(StructType)
-	return ok && a.equals(b.CompositeType)
+	return ok && a.equals(b.compositeType)
 }
 func (s StructType) Concrete() ConcreteType {
 	return s
 }
 func (s StructType) Metrics() (m TypeMetrics) {
-	for _, field := range s.CompositeType {
+	for _, field := range s.compositeType {
 		fm := field.Ty.Metrics()
 		if m.Align < fm.Align {
 			m.Align = fm.Align
@@ -369,7 +383,7 @@ func (s StructType) IRTypeName(c *Compiler) string {
 func (s StructType) layout(c *Compiler) CompositeLayout {
 	var ent CompositeEntry
 	var layout CompositeLayout
-	for _, field := range s.CompositeType {
+	for _, field := range s.compositeType {
 		ty := field.Ty.IRTypeName(c)
 		if ent.N > 0 && ent.Ty != ty {
 			layout = append(layout, ent)
@@ -383,10 +397,20 @@ func (s StructType) layout(c *Compiler) CompositeLayout {
 	}
 	return layout
 }
+func (s StructType) Offset(name string) int {
+	n := 0
+	for _, field := range s.compositeType {
+		if field.Name == name {
+			return n
+		}
+		n += field.Ty.Metrics().Size
+	}
+	return -1
+}
 
 func (a UnionType) Equals(other Type) bool {
 	b, ok := other.(UnionType)
-	return ok && a.equals(b.CompositeType)
+	return ok && a.equals(b.compositeType)
 }
 func (u UnionType) Concrete() ConcreteType {
 	return u
@@ -405,7 +429,7 @@ func (u UnionType) layout(c *Compiler) CompositeLayout {
 }
 func (u UnionType) largest() (f Field) {
 	fs := 0
-	for _, field := range u.CompositeType {
+	for _, field := range u.compositeType {
 		fsiz := field.Ty.Metrics().Size
 		if fsiz > fs {
 			f = field
@@ -413,4 +437,7 @@ func (u UnionType) largest() (f Field) {
 		}
 	}
 	return
+}
+func (_ UnionType) Offset(name string) int {
+	return 0
 }

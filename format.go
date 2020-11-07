@@ -100,6 +100,10 @@ func (f ForStmt) Format(indent int) string {
 func (r ReturnStmt) Format(indent int) string {
 	return "return " + r.Value.Format(indent)
 }
+
+func (e AccessExpr) Format(indent int) string {
+	return e.L.Format(indent) + "." + e.R
+}
 func (e AssignExpr) Format(indent int) string {
 	return "(" + e.L.Format(indent) + " = " + e.R.Format(indent) + ")"
 }

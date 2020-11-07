@@ -17,5 +17,6 @@ const (
 
 	PrecPrefix
 	PrecCall
+	PrecAccess
 	PrecLiteral
 )

@@ -400,6 +400,49 @@ func TestUnion(t *testing.T) {
 	`)
 }
 
+func TestFieldAccess(t *testing.T) {
+	testCompile(t, `
+		type Foo struct { a, b I32; c I64 }
+		type Bar union { a, b I32; c I64 }
+		fn f() {
+			var foo Foo
+			_ = foo.a
+			_ = foo.b
+			_ = foo.c
+
+			var bar Bar
+			_ = bar.a
+			_ = bar.b
+			_ = bar.c
+		}
+	`, `
+		function $f() {
+		@start
+			%t1 =l alloc8 16
+			storew 0, %t1
+			%t2 =l add %t1, 4
+			storew 0, %t2
+			%t3 =l add %t1, 8
+			storel 0, %t3
+
+			%t4 =w loadw %t1
+			%t5 =l add %t1, 4
+			%t6 =w loadw %t5
+			%t7 =l add %t1, 8
+			%t8 =l loadl %t7
+
+			%t9 =l alloc8 8
+			storel 0, %t9
+
+			%t10 =w loadw %t9
+			%t11 =w loadw %t9
+			%t12 =l loadl %t9
+
+			ret
+		}
+	`)
+}
+
 func TestSmallTypes(t *testing.T) {
 	testMainCompile(t, `
 		var i, j I16

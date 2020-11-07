@@ -227,6 +227,7 @@ const (
 	TAmp     // '&'
 	TLess    // '<'
 	TGreater // '>'
+	TDot     // '.'
 
 	TInvalid // invalid token
 

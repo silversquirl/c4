@@ -116,6 +116,21 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 	e.Expression.GenExpression(c)
 }
 
+func (e AccessExpr) GenPointer(c *Compiler) Operand {
+	lty := e.L.TypeOf(c).Concrete().(CompositeType)
+	l := e.L.GenPointer(c)
+	if off := lty.Offset(e.R); off > 0 {
+		t := c.Temporary()
+		c.Insn(t, 'l', "add", l, IRInt(off))
+		return t
+	} else {
+		return l
+	}
+}
+func (e AccessExpr) GenExpression(c *Compiler) Operand {
+	return genLValueExpr(e, c)
+}
+
 func (e AssignExpr) GenExpression(c *Compiler) Operand {
 	if name, ok := e.L.(VarExpr); ok && name == "_" {
 		return e.R.GenExpression(c)
@@ -390,7 +405,7 @@ func (f FuncType) GenZero(c *Compiler, loc Operand) {
 
 func (s StructType) GenZero(c *Compiler, loc Operand) {
 	off := 0
-	for _, field := range s.CompositeType {
+	for _, field := range s.compositeType {
 		floc := loc
 		if off > 0 {
 			ftmp := c.Temporary()
@@ -405,7 +420,7 @@ func (s StructType) GenZero(c *Compiler, loc Operand) {
 func (u UnionType) GenZero(c *Compiler, loc Operand) {
 	var maxTy ConcreteType
 	var maxSize int
-	for _, field := range u.CompositeType {
+	for _, field := range u.compositeType {
 		size := field.Ty.Metrics().Size
 		if size > maxSize {
 			maxTy = field.Ty

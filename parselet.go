@@ -269,6 +269,14 @@ func init() {
 	}
 
 	exprParselets = map[TokenType]exprParselet{
+		TDot: {PrecAccess, func(prec int, p *parser, tok Token, left Expression) Expression {
+			if l, ok := left.(LValue); !ok {
+				panic("Field access of non-lvalue")
+			} else {
+				return AccessExpr{l, p.require(TIdent).S}
+			}
+		}},
+
 		TEquals: {PrecAssign, func(prec int, p *parser, tok Token, left Expression) Expression {
 			if l, ok := left.(LValue); !ok {
 				panic("Assign to non-lvalue")

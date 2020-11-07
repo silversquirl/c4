@@ -19,6 +19,19 @@ func typeCheck(errCtx string, a, b Type) {
 	}
 }
 
+func (e AccessExpr) TypeOf(c *Compiler) Type {
+	switch lty := e.L.TypeOf(c).Concrete().(type) {
+	default:
+		panic("Access of non-composite type " + lty.Format(0))
+	case CompositeType:
+		f := lty.Field(e.R)
+		if f == nil {
+			panic("No such field: " + e.R)
+		}
+		return f
+	}
+}
+
 func (e AssignExpr) typeOf(c *Compiler) Type {
 	if name, ok := e.L.(VarExpr); ok && name == "_" {
 		e.R.TypeOf(c)
@@ -132,13 +145,13 @@ func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {
 	return FuncType{fun.Var, params, ret}
 }
 
-func compositeGet(c *Compiler, composite []VarDecl) CompositeType {
+func compositeGet(c *Compiler, composite []VarDecl) compositeType {
 	fields := make([]Field, len(composite))
 	for i, field := range composite {
 		fields[i].Name = field.Name
 		fields[i].Ty = field.Ty.Get(c)
 	}
-	return CompositeType(fields)
+	return compositeType(fields)
 }
 func (s StructTypeExpr) Get(c *Compiler) ConcreteType {
 	return StructType{compositeGet(c, []VarDecl(s))}

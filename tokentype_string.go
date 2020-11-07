@@ -58,27 +58,28 @@ func _() {
 	_ = x[TAmp-47]
 	_ = x[TLess-48]
 	_ = x[TGreater-49]
-	_ = x[TInvalid-50]
-	_ = x[LexTokenMax-51]
-	_ = x[TKeywordStart-52]
-	_ = x[TKelse-53]
-	_ = x[TKextern-54]
-	_ = x[TKfn-55]
-	_ = x[TKfor-56]
-	_ = x[TKif-57]
-	_ = x[TKpub-58]
-	_ = x[TKreturn-59]
-	_ = x[TKstruct-60]
-	_ = x[TKtype-61]
-	_ = x[TKunion-62]
-	_ = x[TKvar-63]
-	_ = x[TKvariadic-64]
-	_ = x[TKeywordEnd-65]
+	_ = x[TDot-50]
+	_ = x[TInvalid-51]
+	_ = x[LexTokenMax-52]
+	_ = x[TKeywordStart-53]
+	_ = x[TKelse-54]
+	_ = x[TKextern-55]
+	_ = x[TKfn-56]
+	_ = x[TKfor-57]
+	_ = x[TKif-58]
+	_ = x[TKpub-59]
+	_ = x[TKreturn-60]
+	_ = x[TKstruct-61]
+	_ = x[TKtype-62]
+	_ = x[TKunion-63]
+	_ = x[TKvar-64]
+	_ = x[TKvariadic-65]
+	_ = x[TKeywordEnd-66]
 }
 
-const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''pub''return''struct''type''union''var''variadic'TKeywordEnd"
+const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>''.'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''pub''return''struct''type''union''var''variadic'TKeywordEnd"
 
-var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 108, 123, 127, 131, 135, 139, 143, 147, 151, 155, 160, 165, 170, 175, 179, 183, 187, 191, 195, 199, 203, 207, 210, 213, 216, 219, 222, 225, 228, 231, 234, 237, 240, 243, 256, 267, 280, 286, 294, 298, 303, 307, 312, 320, 328, 334, 341, 346, 356, 367}
+var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 108, 123, 127, 131, 135, 139, 143, 147, 151, 155, 160, 165, 170, 175, 179, 183, 187, 191, 195, 199, 203, 207, 210, 213, 216, 219, 222, 225, 228, 231, 234, 237, 240, 243, 246, 259, 270, 283, 289, 297, 301, 306, 310, 315, 323, 331, 337, 344, 349, 359, 370}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

@@ -75,6 +75,11 @@ type VarExpr string
 type RefExpr struct{ V LValue }
 type DerefExpr struct{ V Expression }
 
+type AccessExpr struct {
+	L LValue
+	R string
+}
+
 type AssignExpr struct {
 	L LValue
 	R Expression
