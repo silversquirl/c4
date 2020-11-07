@@ -62,7 +62,9 @@ func (i IfStmt) GenStatement(c *Compiler) {
 	for _, stmt := range i.Then {
 		stmt.GenStatement(c)
 	}
-	c.Insn(0, 0, "jmp", endB)
+	if !c.ret { // HACK: we shouldn't really access this private field
+		c.Insn(0, 0, "jmp", endB)
+	}
 	c.StartBlock(elseB)
 	for _, stmt := range i.Else {
 		stmt.GenStatement(c)

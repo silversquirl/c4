@@ -453,14 +453,12 @@ func TestIf(t *testing.T) {
 		jnz 1, @b1, @b2
 	@b1
 		ret 0
-		jmp @b3
 	@b2
 	@b3
 
 		jnz 0, @b4, @b5
 	@b4
 		ret 1
-		jmp @b6
 	@b5
 	@b6
 	`)
@@ -482,7 +480,6 @@ func TestIfElse(t *testing.T) {
 		jnz 1, @b1, @b2
 	@b1
 		ret 0
-		jmp @b3
 	@b2
 		ret 1
 	@b3
@@ -490,7 +487,6 @@ func TestIfElse(t *testing.T) {
 		jnz 0, @b4, @b5
 	@b4
 		ret 2
-		jmp @b6
 	@b5
 		ret 3
 	@b6
@@ -512,17 +508,14 @@ func TestElseIf(t *testing.T) {
 		jnz 1, @b1, @b2
 	@b1
 		ret 0
-		jmp @b3
 	@b2
 		jnz 2, @b4, @b5
 	@b4
 		ret 1
-		jmp @b6
 	@b5
 		jnz 3, @b7, @b8
 	@b7
 		ret 2
-		jmp @b9
 	@b8
 		ret 3
 	@b9
