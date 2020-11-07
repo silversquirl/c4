@@ -227,11 +227,10 @@ func TestBoolean(t *testing.T) {
 }
 
 func TestNestedArithmetic(t *testing.T) {
-	testMainCompile(t, `return (1 + 10*2) * 2`, `
+	testMainCompile(t, `_ = (1 + 10*2) * 2`, `
 		%t1 =l mul 10, 2
 		%t2 =l add 1, %t1
 		%t3 =l mul %t2, 2
-		ret %t3
 	`)
 }
 
@@ -569,18 +568,22 @@ func TestElseIf(t *testing.T) {
 
 func TestFor0(t *testing.T) {
 	testMainCompile(t, `
-		for {return 0}
-		for ;; {return 1}
+		var a I32
+		for {a = 0}
+		for ;; {a = 1}
 	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
 	@b1
 	@b2
-		ret 0
+		storew 0, %t1
 		jmp @b1
 	@b3
 
 	@b4
 	@b5
-		ret 1
+		storew 1, %t1
 		jmp @b4
 	@b6
 	`)
@@ -588,20 +591,24 @@ func TestFor0(t *testing.T) {
 
 func TestFor1(t *testing.T) {
 	testMainCompile(t, `
-		for 1 {return 0}
-		for ; 2; {return 1}
+		var a I32
+		for 1 {a = 0}
+		for ; 2; {a = 1}
 	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
 	@b1
 		jnz 1, @b2, @b3
 	@b2
-		ret 0
+		storew 0, %t1
 		jmp @b1
 	@b3
 
 	@b4
 		jnz 2, @b5, @b6
 	@b5
-		ret 1
+		storew 1, %t1
 		jmp @b4
 	@b6
 	`)
@@ -610,8 +617,8 @@ func TestFor1(t *testing.T) {
 func TestFor1Other(t *testing.T) {
 	testMainCompile(t, `
 		var a I32
-		for a = 1;; {return 0}
-		for ;; a = 2 {return 1}
+		for a = 1;; {a = 0}
+		for ;; a = 2 {a = 1}
 	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1
@@ -619,13 +626,13 @@ func TestFor1Other(t *testing.T) {
 		storew 1, %t1
 	@b1
 	@b2
-		ret 0
+		storew 0, %t1
 		jmp @b1
 	@b3
 
 	@b4
 	@b5
-		ret 1
+		storew 1, %t1
 		storew 2, %t1
 		jmp @b4
 	@b6
@@ -635,8 +642,8 @@ func TestFor1Other(t *testing.T) {
 func TestFor2(t *testing.T) {
 	testMainCompile(t, `
 		var a I32
-		for a = 0; 1; {return 0}
-		for ; 0; a = 1 {return 1}
+		for a = 0; 1; {a = 0}
+		for ; 0; a = 1 {a = 1}
 	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1
@@ -645,14 +652,14 @@ func TestFor2(t *testing.T) {
 	@b1
 		jnz 1, @b2, @b3
 	@b2
-		ret 0
+		storew 0, %t1
 		jmp @b1
 	@b3
 
 	@b4
 		jnz 0, @b5, @b6
 	@b5
-		ret 1
+		storew 1, %t1
 		storew 1, %t1
 		jmp @b4
 	@b6
@@ -662,7 +669,7 @@ func TestFor2(t *testing.T) {
 func TestFor3(t *testing.T) {
 	testMainCompile(t, `
 		var a I32
-		for a = 0; 1; a = 1 {return 0}
+		for a = 0; 1; a = 1 {a = 0}
 	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1
@@ -671,7 +678,7 @@ func TestFor3(t *testing.T) {
 	@b1
 		jnz 1, @b2, @b3
 	@b2
-		ret 0
+		storew 0, %t1
 		storew 1, %t1
 		jmp @b1
 	@b3
@@ -683,14 +690,12 @@ func TestReferenceVariable(t *testing.T) {
 		var i I32
 		var p [I32]
 		p = &i
-		return 0
 	`, `
 		%t1 =l alloc4 4
 		storew 0, %t1
 		%t2 =l alloc8 8
 		storel 0, %t2
 		storel %t1, %t2
-		ret 0
 	`)
 }
 
@@ -698,7 +703,7 @@ func TestDereferencePointer(t *testing.T) {
 	testMainCompile(t, `
 		var p [I32]
 		_ = [p + 1]
-		return [p]
+		_ = [p]
 	`, `
 		%t1 =l alloc8 8
 		storel 0, %t1
@@ -710,7 +715,6 @@ func TestDereferencePointer(t *testing.T) {
 
 		%t6 =l loadl %t1
 		%t7 =w loadw %t6
-		ret %t7
 	`)
 }
 

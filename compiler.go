@@ -74,6 +74,11 @@ func (c *Compiler) Writef(format string, args ...interface{}) {
 }
 
 func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands ...Operand) {
+	// Skip all instructions after ret since they're unreachable
+	if c.ret {
+		return
+	}
+
 	b := &strings.Builder{}
 	b.WriteString(opcode)
 	for i, operand := range operands {
@@ -147,6 +152,7 @@ type IRParam struct {
 
 func (c *Compiler) StartBlock(block Block) {
 	c.Writef("%s\n", block)
+	c.ret = false
 }
 func (c *Compiler) Block() Block {
 	c.blk++
