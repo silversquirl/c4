@@ -21,6 +21,6 @@ pub fn main(argc I32, argv [[I8]]) I32 {
 		count = 10
 	}
 
-	printf("%dth fib = %d\n", count, fib(count))
+	_ = printf("%dth fib = %d\n", count, fib(count))
 	return 0
 }
