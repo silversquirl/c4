@@ -336,17 +336,22 @@ func TestStruct(t *testing.T) {
 	testCompile(t, `
 		type Foo struct { a, b I32; c I64 }
 		type Bar struct { a, b, c I8 }
+		type Baz struct { a I8; b I64; c I8 }
 		fn fooFn(_ Foo)
 		fn barFn(_ Bar)
+		fn bazFn(_ Baz)
 		pub fn main() I32 {
 			var foo Foo
 			fooFn(foo)
 			var bar Bar
 			barFn(bar)
+			var baz Baz
+			bazFn(baz)
 			return 0
 		}
 	`, `
 		type :b3 = { b 3 }
+		type :blb = { b, l, b }
 		type :w2l = { w 2, l }
 		export function w $main() {
 		@start
@@ -367,6 +372,15 @@ func TestStruct(t *testing.T) {
 			storeb 0, %t6
 
 			call $barFn(:b3 %t4)
+
+			%t7 =l alloc8 24
+			storeb 0, %t7
+			%t8 =l add %t7, 8
+			storel 0, %t8
+			%t9 =l add %t7, 16
+			storeb 0, %t9
+
+			call $bazFn(:blb %t7)
 
 			ret 0
 		}

@@ -365,13 +365,7 @@ func (s StructType) Concrete() ConcreteType {
 	return s
 }
 func (s StructType) Metrics() (m TypeMetrics) {
-	for _, field := range s.compositeType {
-		fm := field.Ty.Metrics()
-		if m.Align < fm.Align {
-			m.Align = fm.Align
-		}
-		m.Size += fm.Size
-	}
+	m.Size, m.Align = s.metrics("")
 	return
 }
 func (s StructType) Format(indent int) string {
@@ -398,14 +392,37 @@ func (s StructType) layout(c *Compiler) CompositeLayout {
 	return layout
 }
 func (s StructType) Offset(name string) int {
-	n := 0
-	for _, field := range s.compositeType {
-		if field.Name == name {
-			return n
-		}
-		n += field.Ty.Metrics().Size
+	if name == "" {
+		return -1
+	} else {
+		off, _ := s.metrics(name)
+		return off
 	}
-	return -1
+}
+func (s StructType) metrics(name string) (off int, align int) {
+	// This is the internal function behind both Metrics and Offset
+	// name == "" -> Metrics
+	// name != "" -> Offset
+
+	for _, field := range s.compositeType {
+		m := field.Ty.Metrics()
+		off = -(-off & -m.Align) // Align upwards
+		if field.Name == name {
+			return
+		}
+		off += m.Size
+
+		if m.Align > align {
+			align = m.Align
+		}
+	}
+
+	if name == "" {
+		off = -(-off & -align) // Align struct size to max alignment for arrays
+		return
+	} else {
+		return -1, -1
+	}
 }
 
 func (a UnionType) Equals(other Type) bool {

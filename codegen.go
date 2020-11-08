@@ -428,6 +428,7 @@ func (f FuncType) GenZero(c *Compiler, loc Operand) {
 func (s StructType) GenZero(c *Compiler, loc Operand) {
 	off := 0
 	for _, field := range s.compositeType {
+		off = -(-off & -field.Ty.Metrics().Align) // Align upwards
 		floc := loc
 		if off > 0 {
 			ftmp := c.Temporary()
