@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -16,7 +16,13 @@ func Parse(code string) (prog Program, err error) {
 		switch e := recover().(type) {
 		case nil:
 		case string:
-			err = errors.New(e)
+			line := 1
+			for i := 0; i < p.tok.Off; i++ {
+				if code[i] == '\n' {
+					line++
+				}
+			}
+			err = fmt.Errorf("Parse error at line %d: %s", line, e)
 		default:
 			panic(e)
 		}

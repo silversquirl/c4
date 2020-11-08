@@ -49,7 +49,7 @@ func main() {
 		data, err := ioutil.ReadFile(file)
 		prog, err := Parse(string(data))
 		if err != nil {
-			log.Fatalln("Parse error:", err)
+			log.Fatal(err)
 		}
 
 		qbeR, qbeW, err := os.Pipe()
