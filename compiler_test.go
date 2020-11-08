@@ -507,6 +507,32 @@ func TestSmallTypes(t *testing.T) {
 	`)
 }
 
+func TestSmallReturnType(t *testing.T) {
+	testCompile(t, `
+		fn i8(i I8) I8 {
+			return i
+		}
+		fn i16(i I16) I16 {
+			return i
+		}
+	`, `
+		function w $i8(w %t1) {
+		@start
+			%t2 =l alloc4 1
+			storeb %t1, %t2
+			%t3 =w loadsb %t2
+			ret %t3
+		}
+		function w $i16(w %t1) {
+		@start
+			%t2 =l alloc4 2
+			storeh %t1, %t2
+			%t3 =w loadsh %t2
+			ret %t3
+		}
+	`)
+}
+
 func TestIf(t *testing.T) {
 	testMainCompile(t, `
 		if 1 {

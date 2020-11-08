@@ -132,12 +132,21 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 		if i > 0 {
 			pbuild.WriteString(", ")
 		}
-		pbuild.WriteString(param.Ty.IRTypeName(c))
+
+		ptype := param.Ty.IRTypeName(c)
+		if ptype == "b" || ptype == "h" {
+			ptype = "w"
+		}
+		pbuild.WriteString(ptype)
+
 		pbuild.WriteRune(' ')
 		ptemps[i] = c.Temporary()
 		pbuild.WriteString(ptemps[i].Operand())
 	}
 
+	if retType == "b" || retType == "h" {
+		retType = "w"
+	}
 	if retType != "" {
 		retType += " "
 	}
