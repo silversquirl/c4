@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -70,9 +69,7 @@ func main() {
 		objFile.Close() // I wish I could pass the fd directly to as
 
 		var qbeCmd, asCmd *exec.Cmd
-		if *irOut {
-			go io.Copy(os.Stdout, qbeR)
-		} else {
+		if !*irOut {
 			qbeCmd = exec.Command("qbe")
 			qbeCmd.Stdin = qbeR
 			qbeCmd.Stdout = asW
@@ -92,6 +89,8 @@ func main() {
 
 		if r, err := NewCompiler().Compile(prog); err != nil {
 			log.Fatal(err)
+		} else if *irOut {
+			r.WriteTo(os.Stdout)
 		} else {
 			r.WriteTo(qbeW)
 		}
