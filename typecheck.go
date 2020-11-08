@@ -141,6 +141,9 @@ func (_ StringExpr) TypeOf(c *Compiler) Type {
 	// TODO: immutable types
 	return PointerType{TypeI8}
 }
+func (_ RuneExpr) TypeOf(c *Compiler) Type {
+	return IntLitType{}
+}
 
 func (name NamedTypeExpr) Get(c *Compiler) ConcreteType {
 	return c.Type(string(name))

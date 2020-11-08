@@ -3,6 +3,7 @@ package main
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -64,7 +65,17 @@ func parseKeyword(tok Token) Token {
 	return tok
 }
 func parseString(tok Token) Token {
-	tok.S = tok.S[1 : len(tok.S)-1]
+	b := strings.Builder{}
+	for _, m := range stringRegex.FindAllStringSubmatch(tok.S[1:len(tok.S)-1], -1) {
+		m = m[1:]
+		for i, rule := range stringRules {
+			if m[i] != "" {
+				b.WriteString(rule(m[i]))
+				break
+			}
+		}
+	}
+	tok.S = b.String()
 	return tok
 }
 func parseInt(tok Token) Token {
@@ -72,6 +83,52 @@ func parseInt(tok Token) Token {
 }
 func parseFloat(tok Token) Token {
 	return tok
+}
+
+var stringRegex = regexp.MustCompile(`\\([enrt\\"'])|\\([0-7]{3})|\\x([a-fA-F0-9]{2})|\\(u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})|(\\.)|(.)`)
+var stringRules = []func(string) string{
+	func(m string) string {
+		switch m[0] {
+		case 'e':
+			return "\x1b"
+		case 'n':
+			return "\n"
+		case 'r':
+			return "\r"
+		case 't':
+			return "\t"
+		case '\\':
+			return `\`
+		case '"':
+			return `"`
+		case '\'':
+			return "'"
+		}
+		panic("unreachable")
+	},
+	func(m string) string {
+		i, err := strconv.ParseUint(m, 8, 8)
+		if err != nil {
+			panic(err.Error())
+		}
+		return string([]byte{byte(i)})
+	},
+	func(m string) string {
+		i, err := strconv.ParseUint(m, 16, 8)
+		if err != nil {
+			panic(err.Error())
+		}
+		return string([]byte{byte(i)})
+	},
+	func(m string) string {
+		i, err := strconv.ParseUint(m[1:], 16, 32)
+		if err != nil {
+			panic(err.Error())
+		}
+		return string(rune(i))
+	},
+	func(m string) string { panic("Unknown escape sequence: '" + m + "'") },
+	func(m string) string { return m },
 }
 
 var lexerRegex *regexp.Regexp
@@ -107,7 +164,10 @@ func init() {
 		case TType:
 			pat = `\p{Lu}[\pL\pN]*`
 		case TString:
-			pat = `"(?:[^"]|\\.)*"`
+			pat = `"(?:[^"\\]|\\[enrt\\"]|\\[0-7]{3}|\\x[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4}|\\U[a-fA-F0-9]{8})*"`
+			sub = parseString
+		case TRune:
+			pat = `'(?:[^"\\]|\\[enrt\\']|\\[0-7]{3}|\\x[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4}|\\U[a-fA-F0-9]{8})'`
 			sub = parseString
 		case TInteger:
 			// TODO: type suffixes
@@ -188,6 +248,7 @@ const (
 
 	// Constants
 	TString  // string literal
+	TRune    // character literal
 	TFloat   // float literal
 	TInteger // integer literal
 
@@ -266,7 +327,7 @@ func (ty TokenType) autoSemi() bool {
 	switch ty {
 	case TRParen, TRSquare, TRBrace:
 	case TIdent, TType:
-	case TString, TInteger, TFloat:
+	case TString, TRune, TInteger, TFloat:
 	default:
 		return false
 	}

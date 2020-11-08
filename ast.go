@@ -116,6 +116,7 @@ type BooleanOperator int
 type IntegerExpr string
 type FloatExpr string
 type StringExpr string
+type RuneExpr rune
 
 type TypeExpr interface {
 	FormattableCode

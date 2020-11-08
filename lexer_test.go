@@ -31,7 +31,7 @@ func TestTokenize(t *testing.T) {
 		elseexternfnforifpubreturntypevar \
 		fooBar _ _foo foo_ \
 		FooBar \
-		"" "hello" 0 1 -1 0. .0 0.0 1.1 -1.1 \
+		"" "hello" 'a' 0 1 -1 0. .0 0.0 1.1 -1.1 \
 	`, []Token{
 		{16, TSemi, ";"}, {17, TComma, ","}, {18, TLParen, "("}, {19, TRParen, ")"},
 		{20, TLSquare, "["}, {21, TRSquare, "]"}, {22, TLBrace, "{"}, {23, TRBrace, "}"},
@@ -54,9 +54,9 @@ func TestTokenize(t *testing.T) {
 		{159, TIdent, "elseexternfnforifpubreturntypevar"}, {197, TIdent, "fooBar"}, {204, TIdent, "_"}, {206, TIdent, "_foo"},
 		{211, TIdent, "foo_"}, {220, TType, "FooBar"},
 
-		{231, TString, ""}, {234, TString, "hello"}, {242, TInteger, "0"}, {244, TInteger, "1"},
-		{246, TInteger, "-1"}, {249, TFloat, "0."}, {252, TFloat, ".0"}, {255, TFloat, "0.0"},
-		{259, TFloat, "1.1"}, {263, TFloat, "-1.1"},
+		{231, TString, ""}, {234, TString, "hello"}, {242, TRune, "a"}, {246, TInteger, "0"},
+		{248, TInteger, "1"}, {250, TInteger, "-1"}, {253, TFloat, "0."}, {256, TFloat, ".0"},
+		{259, TFloat, "0.0"}, {263, TFloat, "1.1"}, {267, TFloat, "-1.1"},
 	})
 }
 
@@ -80,7 +80,7 @@ func TestAutoSemi(t *testing.T) {
 		// Auto-semi tokens
 		`)`, `]`, `}`,
 		`foo`, `Foo`,
-		`""`, `0`, `0.`,
+		`""`, `'a'`, `0`, `0.`,
 		``,
 	}, "\n"), []Token{
 		// Non-auto-semi tokens
@@ -102,6 +102,7 @@ func TestAutoSemi(t *testing.T) {
 		{100, TRParen, ")"}, {101, TSemi, "\n"}, {102, TRSquare, "]"}, {103, TSemi, "\n"},
 		{104, TRBrace, "}"}, {105, TSemi, "\n"}, {106, TIdent, "foo"}, {109, TSemi, "\n"},
 		{110, TType, "Foo"}, {113, TSemi, "\n"}, {114, TString, ""}, {116, TSemi, "\n"},
-		{117, TInteger, "0"}, {118, TSemi, "\n"}, {119, TFloat, "0."}, {121, TSemi, "\n"},
+		{117, TRune, "a"}, {120, TSemi, "\n"}, {121, TInteger, "0"}, {122, TSemi, "\n"},
+		{123, TFloat, "0."}, {125, TSemi, "\n"},
 	})
 }

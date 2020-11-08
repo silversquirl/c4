@@ -147,6 +147,30 @@ func (e IntegerExpr) Format(indent int) string {
 func (e FloatExpr) Format(indent int) string {
 	return string(e)
 }
+func escapeRune(r, sep rune) string {
+	switch r {
+	case '\x1b':
+		return `\e`
+	case '\n':
+		return `\n`
+	case '\r':
+		return `\r`
+	case '\t':
+		return `\t`
+	case '\\', sep:
+		return `\` + string(r)
+	}
+	switch {
+	case ' ' <= r && r <= '~': // Printable ASCII range
+		return string(r)
+	case sep == '\'' && r <= 0x7F:
+		return fmt.Sprintf(`\x%02x`, r)
+	case r <= 0xFFFF:
+		return fmt.Sprintf(`\u%04x`, r)
+	default:
+		return fmt.Sprintf(`\U%08x`, r)
+	}
+}
 func (e StringExpr) Format(indent int) string {
 	b := &strings.Builder{}
 	b.WriteRune('"')
@@ -155,21 +179,16 @@ func (e StringExpr) Format(indent int) string {
 		r, size := utf8.DecodeRune(str)
 		if r == utf8.RuneError {
 			fmt.Fprintf(b, `\x%02x`, str[0])
-		} else if r == '"' {
-			b.WriteString(`\"`)
-		} else if ' ' <= r && r <= '~' { // Printable ASCII range
-			b.WriteRune(r)
-		} else if r <= 0x7F {
-			fmt.Fprintf(b, `\x%02x`, r)
-		} else if r <= 0xFFFF {
-			fmt.Fprintf(b, `\u%04x`, r)
 		} else {
-			fmt.Fprintf(b, `\U%08x`, r)
+			b.WriteString(escapeRune(r, '"'))
 		}
 		str = str[size:]
 	}
 	b.WriteRune('"')
 	return b.String()
+}
+func (e RuneExpr) Format(indent int) string {
+	return "'" + escapeRune(rune(e), '\'') + "'"
 }
 
 func (name NamedTypeExpr) Format(indent int) string {

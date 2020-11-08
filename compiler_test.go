@@ -852,6 +852,9 @@ func TestStringLiteral(t *testing.T) {
 			_ = puts("str1")
 			_ = puts("str2")
 			_ = puts("str2")
+			_ = puts("\e\n\r\t\\\"")
+			_ = puts("\x00\xab\xff")
+			_ = puts("\u0100\U00010000")
 			return 0
 		}
 	`, `
@@ -863,11 +866,40 @@ func TestStringLiteral(t *testing.T) {
 			%t4 =w call $puts(l $str1)
 			%t5 =w call $puts(l $str2)
 			%t6 =w call $puts(l $str2)
+			%t7 =w call $puts(l $str3)
+			%t8 =w call $puts(l $str4)
+			%t9 =w call $puts(l $str5)
 			ret 0
 		}
 		data $str0 = { b "str0", b 0 }
 		data $str1 = { b "str1", b 0 }
 		data $str2 = { b "str2", b 0 }
+		data $str3 = { b 27, b 10, b 13, b 9, b "\"", b 0 }
+		data $str4 = { b 0, b 171, b 255, b 0 }
+		data $str5 = { b 196, b 128, b 240, b 144, b 128, b 128, b 0 }
+	`)
+}
+
+func TestRuneLiteral(t *testing.T) {
+	testMainCompile(t, `
+		var r I32
+		r = 'a'
+		r = '\e'
+		r = '\n'
+		r = '\r'
+		r = '\t'
+		r = '\\'
+		r = '\''
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+		storew 97, %t1
+		storew 27, %t1
+		storew 10, %t1
+		storew 13, %t1
+		storew 9, %t1
+		storew 92, %t1
+		storew 39, %t1
 	`)
 }
 

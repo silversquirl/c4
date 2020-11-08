@@ -417,6 +417,9 @@ func (e FloatExpr) GenExpression(c *Compiler) Operand {
 func (e StringExpr) GenExpression(c *Compiler) Operand {
 	return c.String(string(e))
 }
+func (e RuneExpr) GenExpression(c *Compiler) Operand {
+	return IRInt(int(e))
+}
 
 func (p PrimitiveType) GenZero(c *Compiler, loc Operand) {
 	c.Insn(0, 0, "store"+p.IRTypeName(c), IRInt(0), loc)

@@ -199,6 +199,9 @@ func init() {
 		TString: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
 			return StringExpr(tok.S)
 		}},
+		TRune: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
+			return RuneExpr([]rune(tok.S)[0])
+		}},
 		TFloat: {PrecLiteral, func(prec int, p *parser, tok Token) Expression {
 			return FloatExpr(tok.S)
 		}},
