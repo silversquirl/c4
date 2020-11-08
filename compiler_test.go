@@ -726,8 +726,22 @@ func TestReferenceVariable(t *testing.T) {
 func TestDereferencePointer(t *testing.T) {
 	testMainCompile(t, `
 		var p [I32]
-		_ = [p + 1]
 		_ = [p]
+	`, `
+		%t1 =l alloc8 8
+		storel 0, %t1
+
+		%t2 =l loadl %t1
+		%t3 =w loadw %t2
+	`)
+}
+
+func TestPointerArithmetic(t *testing.T) {
+	testMainCompile(t, `
+		var p [I32]
+		p += 1
+		var i I32
+		p += i
 	`, `
 		%t1 =l alloc8 8
 		storel 0, %t1
@@ -735,10 +749,17 @@ func TestDereferencePointer(t *testing.T) {
 		%t2 =l loadl %t1
 		%t3 =l mul 4, 1
 		%t4 =l add %t2, %t3
-		%t5 =w loadw %t4
+		storel %t4, %t1
+
+		%t5 =l alloc4 4
+		storew 0, %t5
 
 		%t6 =l loadl %t1
-		%t7 =w loadw %t6
+		%t7 =w loadw %t5
+		%t8 =l extsw %t7
+		%t9 =l mul 4, %t8
+		%t10 =l add %t6, %t9
+		storel %t10, %t1
 	`)
 }
 

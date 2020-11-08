@@ -105,7 +105,22 @@ func (e PrefixExpr) TypeOf(c *Compiler) Type {
 func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
-	typeCheck("binary expression", rtyp, ltyp)
+	_, lptr := ltyp.Concrete().(PointerType)
+	_, rptr := rtyp.Concrete().(PointerType)
+
+	// Ensure ltyp is always the pointer
+	if rptr && !lptr {
+		lptr, rptr = rptr, lptr
+		ltyp, rtyp = rtyp, ltyp
+	}
+
+	if lptr && !rptr {
+		if _, ok := rtyp.Concrete().(NumericType); !ok {
+			typeCheck("binary expression", rtyp, ltyp)
+		}
+	} else {
+		typeCheck("binary expression", rtyp, ltyp)
+	}
 	return ltyp
 }
 

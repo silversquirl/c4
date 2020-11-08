@@ -150,8 +150,7 @@ func (e MutateExpr) GenExpression(c *Compiler) Operand {
 	lv := genPtrLoad(l, ty, c)
 	r := e.R.GenExpression(c)
 
-	v := c.Temporary()
-	c.Insn(v, ty.IRBaseTypeName(), e.Op.Instruction(ty), lv, r)
+	v := e.Op.genExpression(c, lv, r, e.L.TypeOf(c), e.R.TypeOf(c), ty)
 	genPtrStore(l, v, ty, c)
 	return l
 }
@@ -258,27 +257,50 @@ func (op PrefixOperator) Instruction(c *Compiler, ty NumericType) (string, Opera
 	panic("Invalid prefix operator")
 }
 
+func (e BinaryExpr) GenExpression(c *Compiler) Operand {
+	ty := e.TypeOf(c).Concrete().(NumericType)
+	l := e.L.GenExpression(c)
+	r := e.R.GenExpression(c)
+	return e.Op.genExpression(c, l, r, e.L.TypeOf(c), e.R.TypeOf(c), ty)
+}
+
+func extend(c *Compiler, v Operand, ty NumericType) Operand {
+	t := c.Temporary()
+	signed := "u"
+	if ty.Signed() {
+		signed = "s"
+	}
+	c.Insn(t, 'l', "ext"+signed+ty.IRTypeName(c), v)
+	return t
+}
 func ptrMul(c *Compiler, v Operand, ty PointerType) Operand {
 	t := c.Temporary()
 	c.Insn(t, ty.IRBaseTypeName(), BinMul.Instruction(ty), IRInt(ty.To.Metrics().Size), v)
 	return t
 }
-func (e BinaryExpr) GenExpression(c *Compiler) Operand {
-	ty := e.TypeOf(c).Concrete().(NumericType)
-	lty, lptr := e.L.TypeOf(c).(PointerType)
-	rty, rptr := e.R.TypeOf(c).(PointerType)
+func (op BinaryOperator) genExpression(c *Compiler, l, r Operand, lty, rty Type, ty NumericType) Operand {
+	lpty, lptr := lty.(PointerType)
+	rpty, rptr := rty.(PointerType)
 
-	l := e.L.GenExpression(c)
-	if !lptr && rptr {
-		l = ptrMul(c, l, rty)
+	if lty.IsConcrete() && rty.IsConcrete() {
+		lsiz := lty.Concrete().Metrics().Size
+		rsiz := rty.Concrete().Metrics().Size
+		if lsiz > rsiz {
+			r = extend(c, r, rty.Concrete().(NumericType))
+		} else if rsiz > lsiz {
+			l = extend(c, r, lty.Concrete().(NumericType))
+		}
 	}
-	r := e.R.GenExpression(c)
+
+	if !lptr && rptr {
+		l = ptrMul(c, l, rpty)
+	}
 	if lptr && !rptr {
-		r = ptrMul(c, r, lty)
+		r = ptrMul(c, r, lpty)
 	}
 
 	v := c.Temporary()
-	c.Insn(v, ty.IRBaseTypeName(), e.Op.Instruction(ty), l, r)
+	c.Insn(v, ty.IRBaseTypeName(), op.Instruction(ty), l, r)
 	return v
 }
 
