@@ -383,7 +383,7 @@ func (e BooleanExpr) GenExpression(c *Compiler) Operand {
 
 	longB := c.Block()
 	shortB := c.Block()
-	c.Insn(0, 0, e.Op.Instruction(), v, longB, shortB)
+	e.Op.Emit(c, v, longB, shortB)
 
 	c.StartBlock(longB)
 	r := e.R.GenExpression(c)
@@ -395,14 +395,17 @@ func (e BooleanExpr) GenExpression(c *Compiler) Operand {
 }
 
 var _ = [1]int{0}[BooleanOperatorMax-3] // Assert correct number of binary operators
-func (op BooleanOperator) Instruction() string {
+func (op BooleanOperator) Emit(c *Compiler, v Operand, longB, shortB Block) {
+	var a, b Block
 	switch op {
 	case BoolAnd:
-		return "jz"
+		a, b = shortB, longB
 	case BoolOr:
-		return "jnz"
+		a, b = longB, shortB
+	default:
+		panic("Invalid boolean operator")
 	}
-	panic("Invalid boolean operator")
+	c.Insn(0, 0, "jnz", v, a, b)
 }
 
 func (e IntegerExpr) GenExpression(c *Compiler) Operand {

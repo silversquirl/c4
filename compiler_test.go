@@ -208,7 +208,7 @@ func TestBoolean(t *testing.T) {
 		_ = 4 || 2
 	`, `
 		%t1 =l copy 4
-		jz %t1, @b1, @b2
+		jnz %t1, @b2, @b1
 	@b1
 		%t1 =l copy 2
 	@b2
