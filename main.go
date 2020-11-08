@@ -90,8 +90,10 @@ func main() {
 			}
 		}
 
-		if err := NewCompiler(qbeW).Compile(prog); err != nil {
+		if r, err := NewCompiler().Compile(prog); err != nil {
 			log.Fatal(err)
+		} else {
+			r.WriteTo(qbeW)
 		}
 		qbeW.Close()
 		if !*irOut {

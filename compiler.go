@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +10,7 @@ import (
 )
 
 type Compiler struct {
-	w io.Writer
+	r CompileResult
 
 	blk  Block
 	temp Temporary
@@ -22,35 +23,53 @@ type Compiler struct {
 	strM map[string]int          // Map from string to index of entry in strs
 }
 
-func NewCompiler(w io.Writer) *Compiler {
-	return &Compiler{
-		w, 0, 0, false,
-		map[string]ConcreteType{
-			"I64": TypeI64,
-			"I32": TypeI32,
-			"I16": TypeI16,
-			"I8":  TypeI8,
-
-			"U64": TypeU64,
-			"U32": TypeU32,
-			"U16": TypeU16,
-			"U8":  TypeU8,
-
-			"F64": TypeF64,
-			"F32": TypeF32,
-
-			"Bool": TypeBool,
-		},
-		nil,
-		map[string]Variable{
-			"_": {},
-		},
-		nil,
-		make(map[string]int),
-	}
+type CompileResult struct {
+	typeW, codeW bytes.Buffer
 }
 
-func (c *Compiler) Compile(prog Program) (err error) {
+func (r CompileResult) String() string {
+	return r.typeW.String() + r.codeW.String()
+}
+func (r CompileResult) WriteTo(w io.Writer) (n int64, err error) {
+	k, err := r.typeW.WriteTo(w)
+	n += k
+	if err != nil {
+		return
+	}
+
+	k, err = r.codeW.WriteTo(w)
+	n += k
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func NewCompiler() *Compiler {
+	c := &Compiler{}
+	c.typs = map[string]ConcreteType{
+		"I64": TypeI64,
+		"I32": TypeI32,
+		"I16": TypeI16,
+		"I8":  TypeI8,
+
+		"U64": TypeU64,
+		"U32": TypeU32,
+		"U16": TypeU16,
+		"U8":  TypeU8,
+
+		"F64": TypeF64,
+		"F32": TypeF32,
+
+		"Bool": TypeBool,
+	}
+	c.vars = map[string]Variable{"_": {}}
+	c.strM = make(map[string]int)
+	return c
+}
+
+func (c *Compiler) Compile(prog Program) (r CompileResult, err error) {
 	defer func() {
 		switch e := recover().(type) {
 		case nil:
@@ -61,6 +80,8 @@ func (c *Compiler) Compile(prog Program) (err error) {
 		}
 	}()
 	c.compile(prog)
+	r = c.r
+	c.r = CompileResult{}
 	return
 }
 
@@ -70,7 +91,7 @@ func (c *Compiler) compile(prog Program) {
 }
 
 func (c *Compiler) Writef(format string, args ...interface{}) {
-	fmt.Fprintf(c.w, format, args...)
+	fmt.Fprintf(&c.r.codeW, format, args...)
 }
 
 func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands ...Operand) {
@@ -290,17 +311,19 @@ func (l CompositeLayout) Ident() string {
 }
 
 func (l CompositeLayout) GenType(c *Compiler) {
-	c.Writef("type %s = { ", l.Ident())
+	c.r.typeW.WriteString("type ")
+	c.r.typeW.WriteString(l.Ident())
+	c.r.typeW.WriteString(" = { ")
 	for i, entry := range l {
 		if i > 0 {
-			c.Writef(", ")
+			c.r.typeW.WriteString(", ")
 		}
-		c.Writef("%s", entry.Ty)
+		c.r.typeW.WriteString(entry.Ty)
 		if entry.N > 1 {
-			c.Writef(" %d", entry.N)
+			fmt.Fprintf(&c.r.typeW, " %d", entry.N)
 		}
 	}
-	c.Writef(" }\n")
+	c.r.typeW.WriteString(" }\n")
 }
 
 type Operand interface {

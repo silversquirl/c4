@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"runtime/debug"
-	"strings"
 	"testing"
 )
 
@@ -25,11 +24,10 @@ func testCompile(t *testing.T, code, ir string) {
 	prog := p.parseProgram()
 
 	phase = "Compile"
-	b := &strings.Builder{}
-	c := NewCompiler(b)
+	c := NewCompiler()
 	c.compile(prog)
 
-	gen := b.String()
+	gen := c.r.String()
 	if eq, ai, bi := CodeCompare(gen, ir); !eq {
 		t.Fatalf("Generated and expected IRs do not match at bytes %d, %d\n%s!!%s", ai, bi, gen[:ai], gen[ai:])
 	}
@@ -41,9 +39,6 @@ func testCompileFailure(t *testing.T, err, code string) {
 
 	p := parser{<-toks, toks}
 	prog := p.parseProgram()
-
-	b := &strings.Builder{}
-	c := NewCompiler(b)
 
 	defer func() {
 		switch e := recover().(type) {
@@ -57,7 +52,7 @@ func testCompileFailure(t *testing.T, err, code string) {
 			panic(e)
 		}
 	}()
-	c.compile(prog)
+	NewCompiler().compile(prog)
 }
 
 func testMainCompile(t *testing.T, code, ir string) {
@@ -341,6 +336,8 @@ func TestStruct(t *testing.T) {
 			return 0
 		}
 	`, `
+		type :b3 = { b 3 }
+		type :w2l = { w 2, l }
 		export function w $main() {
 		@start
 			%t1 =l alloc8 16
@@ -363,8 +360,6 @@ func TestStruct(t *testing.T) {
 
 			ret 0
 		}
-		type :b3 = { b 3 }
-		type :w2l = { w 2, l }
 	`)
 }
 
@@ -382,6 +377,8 @@ func TestUnion(t *testing.T) {
 			return 0
 		}
 	`, `
+		type :b = { b }
+		type :l = { l }
 		export function w $main() {
 		@start
 			%t1 =l alloc8 8
@@ -394,8 +391,35 @@ func TestUnion(t *testing.T) {
 
 			ret 0
 		}
-		type :b = { b }
-		type :l = { l }
+	`)
+}
+
+func TestCompositeReturn(t *testing.T) {
+	testCompile(t, `
+		type S struct { a I32 }
+		type U struct { a I32 }
+		fn sf() S {
+			var s S
+			return s
+		}
+		fn uf() U {
+			var u U
+			return u
+		}
+	`, `
+		type :w = { w }
+		function :w $sf() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			ret %t1
+		}
+		function :w $uf() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			ret %t1
+		}
 	`)
 }
 
