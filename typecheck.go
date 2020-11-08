@@ -79,11 +79,11 @@ func (e VarExpr) TypeOf(c *Compiler) Type {
 }
 
 func (e RefExpr) TypeOf(c *Compiler) Type {
-	return PointerType{e.V.TypeOf(c).(ConcreteType)}
+	return PointerType{e.V.TypeOf(c).Concrete()}
 }
 
 func (e DerefExpr) TypeOf(c *Compiler) Type {
-	if t, ok := e.V.TypeOf(c).(PointerType); ok {
+	if t, ok := e.V.TypeOf(c).Concrete().(PointerType); ok {
 		return t.To
 	} else {
 		panic("Dereference of non-pointer type")

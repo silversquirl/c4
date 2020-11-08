@@ -267,12 +267,16 @@ func TestTypeDef(t *testing.T) {
 	testCompile(t, `
 		type Foo I32
 		type Bar U64
+		type Baz [I8]
 		pub fn main() I32 {
 			var foo Foo
 			_ = foo / foo
 
 			var bar Bar
 			_ = bar / bar
+
+			var baz Baz
+			_ = [baz + 3]
 
 			return 0
 		}
@@ -290,6 +294,12 @@ func TestTypeDef(t *testing.T) {
 			%t6 =l loadl %t5
 			%t7 =l loadl %t5
 			%t8 =l udiv %t6, %t7
+
+			%t9 =l alloc8 8
+			storel 0, %t9
+			%t10 =l loadl %t9
+			%t11 =l add %t10, 3
+			%t12 =w loadsb %t11
 
 			ret 0
 		}
