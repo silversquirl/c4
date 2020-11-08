@@ -10,7 +10,7 @@ import (
 )
 
 type Compiler struct {
-	r CompileResult
+	r *CompileResult
 
 	blk  Block
 	temp Temporary
@@ -27,10 +27,10 @@ type CompileResult struct {
 	typeW, codeW bytes.Buffer
 }
 
-func (r CompileResult) String() string {
+func (r *CompileResult) String() string {
 	return r.typeW.String() + r.codeW.String()
 }
-func (r CompileResult) WriteTo(w io.Writer) (n int64, err error) {
+func (r *CompileResult) WriteTo(w io.Writer) (n int64, err error) {
 	k, err := r.typeW.WriteTo(w)
 	n += k
 	if err != nil {
@@ -64,12 +64,13 @@ func NewCompiler() *Compiler {
 
 		"Bool": TypeBool,
 	}
+	c.r = &CompileResult{}
 	c.vars = map[string]Variable{"_": {}}
 	c.strM = make(map[string]int)
 	return c
 }
 
-func (c *Compiler) Compile(prog Program) (r CompileResult, err error) {
+func (c *Compiler) Compile(prog Program) (r *CompileResult, err error) {
 	defer func() {
 		switch e := recover().(type) {
 		case nil:
@@ -81,7 +82,7 @@ func (c *Compiler) Compile(prog Program) (r CompileResult, err error) {
 	}()
 	c.compile(prog)
 	r = c.r
-	c.r = CompileResult{}
+	c.r = &CompileResult{}
 	return
 }
 
