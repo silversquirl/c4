@@ -17,11 +17,12 @@ type lexer struct {
 }
 
 func (l *lexer) tokenize(code string) {
-	for _, m := range lexerRegex.FindAllStringSubmatch(code, -1) {
-		m = m[1:]
+	for _, m := range lexerRegex.FindAllStringSubmatchIndex(code, -1) {
+		m = m[2:]
 		for i, rule := range lexerRules {
-			if m[i] != "" {
-				tok := Token{rule.Ty, m[i]}
+			a, b := m[2*i], m[2*i+1]
+			if a >= 0 && b >= 0 {
+				tok := Token{a, rule.Ty, code[a:b]}
 				if rule.Sub != nil {
 					tok = rule.Sub(tok)
 				}
@@ -253,8 +254,9 @@ const (
 )
 
 type Token struct {
-	Ty TokenType
-	S  string
+	Off int // byte offset of start of token
+	Ty  TokenType
+	S   string
 }
 
 type TokenType int

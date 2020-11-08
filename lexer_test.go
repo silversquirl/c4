@@ -11,11 +11,11 @@ func testTokens(t *testing.T, src string, toks []Token) {
 	for _, tok := range toks {
 		tok2 := <-tokC
 		if tok != tok2 {
-			t.Fatalf("Tokens do not match: expected %v, got %v", tok, tok2)
+			t.Errorf("Tokens do not match: expected %v, got %v", tok, tok2)
 		}
 	}
 	if (<-tokC).Ty != TEOF {
-		t.Fatal("Too many tokens")
+		t.Error("Too many tokens")
 	}
 }
 
@@ -33,30 +33,30 @@ func TestTokenize(t *testing.T) {
 		FooBar \
 		"" "hello" 0 1 -1 0. .0 0.0 1.1 -1.1 \
 	`, []Token{
-		{TSemi, ";"}, {TComma, ","}, {TLParen, "("}, {TRParen, ")"},
-		{TLSquare, "["}, {TRSquare, "]"}, {TLBrace, "{"}, {TRBrace, "}"},
+		{16, TSemi, ";"}, {17, TComma, ","}, {18, TLParen, "("}, {19, TRParen, ")"},
+		{20, TLSquare, "["}, {21, TRSquare, "]"}, {22, TLBrace, "{"}, {23, TRBrace, "}"},
 
-		{TMadd, "+="}, {TMsub, "-="}, {TMmul, "*="}, {TMdiv, "/="},
-		{TMmod, "%="}, {TMor, "|="}, {TMxor, "^="}, {TMand, "&="},
-		{TMshl, "<<="}, {TMshr, ">>="}, {TMland, "&&="}, {TMlor, "||="},
+		{29, TMadd, "+="}, {32, TMsub, "-="}, {35, TMmul, "*="}, {38, TMdiv, "/="},
+		{41, TMmod, "%="}, {44, TMor, "|="}, {47, TMxor, "^="}, {54, TMand, "&="},
+		{57, TMshl, "<<="}, {61, TMshr, ">>="}, {65, TMland, "&&="}, {69, TMlor, "||="},
 
-		{TEquals, "="}, {TPlus, "+"}, {TMinus, "-"}, {TAster, "*"},
-		{TSlash, "/"}, {TPerc, "%"}, {TExcl, "!"}, {TPipe, "|"},
-		{TCaret, "^"}, {TAmp, "&"}, {TLess, "<"}, {TGreater, ">"},
+		{77, TEquals, "="}, {78, TPlus, "+"}, {79, TMinus, "-"}, {80, TAster, "*"},
+		{81, TSlash, "/"}, {82, TPerc, "%"}, {83, TExcl, "!"}, {84, TPipe, "|"},
+		{85, TCaret, "^"}, {86, TAmp, "&"}, {87, TLess, "<"}, {88, TGreater, ">"},
 
-		{TShl, "<<"}, {TShr, ">>"}, {TLand, "&&"}, {TLor, "||"},
-		{TCle, "<="}, {TCge, ">="}, {TCeq, "=="}, {TCne, "!="},
+		{94, TShl, "<<"}, {96, TShr, ">>"}, {98, TLand, "&&"}, {100, TLor, "||"},
+		{102, TCle, "<="}, {104, TCge, ">="}, {106, TCeq, "=="}, {108, TCne, "!="},
 
-		{TKelse, "else"}, {TKextern, "extern"}, {TKfn, "fn"}, {TKfor, "for"},
-		{TKif, "if"}, {TKpub, "pub"}, {TKreturn, "return"}, {TKtype, "type"},
-		{TKvar, "var"},
+		{115, TKelse, "else"}, {120, TKextern, "extern"}, {127, TKfn, "fn"}, {130, TKfor, "for"},
+		{134, TKif, "if"}, {137, TKpub, "pub"}, {141, TKreturn, "return"}, {148, TKtype, "type"},
+		{153, TKvar, "var"},
 
-		{TIdent, "elseexternfnforifpubreturntypevar"}, {TIdent, "fooBar"}, {TIdent, "_"}, {TIdent, "_foo"},
-		{TIdent, "foo_"}, {TType, "FooBar"},
+		{159, TIdent, "elseexternfnforifpubreturntypevar"}, {197, TIdent, "fooBar"}, {204, TIdent, "_"}, {206, TIdent, "_foo"},
+		{211, TIdent, "foo_"}, {220, TType, "FooBar"},
 
-		{TString, ""}, {TString, "hello"}, {TInteger, "0"}, {TInteger, "1"},
-		{TInteger, "-1"}, {TFloat, "0."}, {TFloat, ".0"}, {TFloat, "0.0"},
-		{TFloat, "1.1"}, {TFloat, "-1.1"},
+		{231, TString, ""}, {234, TString, "hello"}, {242, TInteger, "0"}, {244, TInteger, "1"},
+		{246, TInteger, "-1"}, {249, TFloat, "0."}, {252, TFloat, ".0"}, {255, TFloat, "0.0"},
+		{259, TFloat, "1.1"}, {263, TFloat, "-1.1"},
 	})
 }
 
@@ -84,24 +84,24 @@ func TestAutoSemi(t *testing.T) {
 		``,
 	}, "\n"), []Token{
 		// Non-auto-semi tokens
-		{TSemi, ";"}, {TComma, ","},
-		{TLParen, "("}, {TLSquare, "["}, {TLBrace, "{"},
+		{0, TSemi, ";"}, {2, TComma, ","},
+		{4, TLParen, "("}, {6, TLSquare, "["}, {8, TLBrace, "{"},
 
-		{TEquals, "="}, {TPlus, "+"}, {TMinus, "-"}, {TAster, "*"},
-		{TSlash, "/"}, {TPerc, "%"}, {TExcl, "!"}, {TPipe, "|"},
-		{TCaret, "^"}, {TAmp, "&"}, {TLess, "<"}, {TGreater, ">"},
+		{10, TEquals, "="}, {12, TPlus, "+"}, {14, TMinus, "-"}, {16, TAster, "*"},
+		{18, TSlash, "/"}, {20, TPerc, "%"}, {22, TExcl, "!"}, {24, TPipe, "|"},
+		{26, TCaret, "^"}, {28, TAmp, "&"}, {30, TLess, "<"}, {32, TGreater, ">"},
 
-		{TShl, "<<"}, {TShr, ">>"}, {TLand, "&&"}, {TLor, "||"},
-		{TCeq, "=="}, {TCne, "!="}, {TCle, "<="}, {TCge, ">="},
+		{34, TShl, "<<"}, {37, TShr, ">>"}, {40, TLand, "&&"}, {43, TLor, "||"},
+		{46, TCeq, "=="}, {49, TCne, "!="}, {52, TCle, "<="}, {55, TCge, ">="},
 
-		{TKelse, "else"}, {TKextern, "extern"}, {TKfn, "fn"}, {TKfor, "for"},
-		{TKif, "if"}, {TKpub, "pub"}, {TKreturn, "return"}, {TKtype, "type"},
-		{TKvar, "var"},
+		{58, TKelse, "else"}, {63, TKextern, "extern"}, {70, TKfn, "fn"}, {73, TKfor, "for"},
+		{77, TKif, "if"}, {80, TKpub, "pub"}, {84, TKreturn, "return"}, {91, TKtype, "type"},
+		{96, TKvar, "var"},
 
 		// Non-auto-semi tokens
-		{TRParen, ")"}, {TSemi, "\n"}, {TRSquare, "]"}, {TSemi, "\n"},
-		{TRBrace, "}"}, {TSemi, "\n"}, {TIdent, "foo"}, {TSemi, "\n"},
-		{TType, "Foo"}, {TSemi, "\n"}, {TString, ""}, {TSemi, "\n"},
-		{TInteger, "0"}, {TSemi, "\n"}, {TFloat, "0."}, {TSemi, "\n"},
+		{100, TRParen, ")"}, {101, TSemi, "\n"}, {102, TRSquare, "]"}, {103, TSemi, "\n"},
+		{104, TRBrace, "}"}, {105, TSemi, "\n"}, {106, TIdent, "foo"}, {109, TSemi, "\n"},
+		{110, TType, "Foo"}, {113, TSemi, "\n"}, {114, TString, ""}, {116, TSemi, "\n"},
+		{117, TInteger, "0"}, {118, TSemi, "\n"}, {119, TFloat, "0."}, {121, TSemi, "\n"},
 	})
 }
