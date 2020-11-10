@@ -1,6 +1,6 @@
 package main
 
-type toplevelParselet func(*parser, Token, bool) Toplevel
+type toplevelParselet func(*parser, Token) Toplevel
 type statementParselet func(*parser, Token) Statement
 type prefixExprParselet struct {
 	prec int
@@ -27,22 +27,15 @@ func (p *parser) parseProgram() (prog Program) {
 }
 
 func (p *parser) parseToplevel() Toplevel {
-	// TODO: more modifiers
-	pub := false
-	if p.peek() == TKpub {
-		pub = true
-		p.next()
-	}
-
 	pl, ok := toplevelParselets[p.peek()]
 	if !ok {
 		p.errExpect("toplevel construct")
 	}
-	return pl(p, p.next(), pub)
+	return pl(p, p.next())
 }
 
 func init() {
-	fn := func(p *parser, tok Token, pub bool, variadic bool) Toplevel {
+	fn := func(p *parser, tok Token) Toplevel {
 		// Parse function signature
 		name := p.require(TIdent).S
 		p.require(TLParen)
@@ -52,30 +45,49 @@ func init() {
 		}
 		ret := p.parseType()
 
-		if !variadic && p.peek() == TLBrace {
+		if p.peek() == TLBrace {
 			// Parse function body
-			return Function{pub, name, params, ret, p.parseBlock()}
+			return Function{false, name, params, ret, p.parseBlock()}
 		} else {
 			// No body, just a declaration
 			paramTy := make([]TypeExpr, len(params))
 			for i, param := range params {
 				paramTy[i] = param.Ty
 			}
-			return VarsDecl{[]string{name}, FuncTypeExpr{variadic, paramTy, ret}}
+			return VarsDecl{[]string{name}, FuncTypeExpr{false, paramTy, ret}}
 		}
 	}
 
 	toplevelParselets = map[TokenType]toplevelParselet{
-		TKfn: func(p *parser, tok Token, pub bool) Toplevel {
-			return fn(p, tok, pub, false)
+		TKpub: func(p *parser, tok Token) Toplevel {
+			switch tl := p.parseToplevel().(type) {
+			case Function:
+				tl.Pub = true
+				return tl
+			}
+			panic("Expected function")
 		},
-		TKvariadic: func(p *parser, tok Token, pub bool) Toplevel {
-			return fn(p, p.require(TKfn), pub, true)
+		TKvariadic: func(p *parser, tok Token) Toplevel {
+			switch tl := p.parseToplevel().(type) {
+			case VarsDecl:
+				if ty, ok := tl.Ty.(FuncTypeExpr); ok {
+					ty.Var = true
+					tl.Ty = ty
+					return tl
+				}
+			}
+			panic("Expected function declaration")
 		},
-		TKvar: func(p *parser, tok Token, pub bool) Toplevel {
+
+		TKfn: func(p *parser, tok Token) Toplevel {
+			return fn(p, tok)
+		},
+
+		TKvar: func(p *parser, tok Token) Toplevel {
 			return p.parseVarTypes()
 		},
-		TKtype: func(p *parser, tok Token, pub bool) Toplevel {
+
+		TKtype: func(p *parser, tok Token) Toplevel {
 			name := p.require(TType).S
 			if p.accept(TEquals) {
 				return TypeAlias{name, p.parseType()}
@@ -393,7 +405,7 @@ func init() {
 				t.Param = append(t.Param, ty)
 			}
 			t.Ret = p.parseType()
-			return t
+			return PointerTypeExpr{t}
 		},
 
 		TKstruct: func(p *parser, tok Token) TypeExpr {
