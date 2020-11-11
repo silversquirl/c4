@@ -533,6 +533,9 @@ func TestSmallTypes(t *testing.T) {
 
 func TestSmallReturnType(t *testing.T) {
 	testCompile(t, `
+		fn bool(b Bool) Bool {
+			return b
+		}
 		fn i8(i I8) I8 {
 			return i
 		}
@@ -540,6 +543,13 @@ func TestSmallReturnType(t *testing.T) {
 			return i
 		}
 	`, `
+		function w $bool(w %t1) {
+		@start
+			%t2 =l alloc4 1
+			storeb %t1, %t2
+			%t3 =w loadub %t2
+			ret %t3
+		}
 		function w $i8(w %t1) {
 		@start
 			%t2 =l alloc4 1
