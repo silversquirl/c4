@@ -35,29 +35,6 @@ func (p *parser) parseToplevel() Toplevel {
 }
 
 func init() {
-	fn := func(p *parser, tok Token) Toplevel {
-		// Parse function signature
-		name := p.require(TIdent).S
-		p.require(TLParen)
-		var params []VarDecl
-		for l := p.list(TComma, TRParen); l.next(); {
-			params = append(params, p.parseVarTypes().Decls()...)
-		}
-		ret := p.parseType()
-
-		if p.peek() == TLBrace {
-			// Parse function body
-			return Function{false, name, params, ret, p.parseBlock()}
-		} else {
-			// No body, just a declaration
-			paramTy := make([]TypeExpr, len(params))
-			for i, param := range params {
-				paramTy[i] = param.Ty
-			}
-			return VarsDecl{[]string{name}, FuncTypeExpr{false, paramTy, ret}}
-		}
-	}
-
 	toplevelParselets = map[TokenType]toplevelParselet{
 		TKpub: func(p *parser, tok Token) Toplevel {
 			switch tl := p.parseToplevel().(type) {
@@ -80,7 +57,26 @@ func init() {
 		},
 
 		TKfn: func(p *parser, tok Token) Toplevel {
-			return fn(p, tok)
+			// Parse function signature
+			name := p.require(TIdent).S
+			p.require(TLParen)
+			var params []VarDecl
+			for l := p.list(TComma, TRParen); l.next(); {
+				params = append(params, p.parseVarTypes().Decls()...)
+			}
+			ret := p.parseType()
+
+			if p.peek() == TLBrace {
+				// Parse function body
+				return Function{false, name, params, ret, p.parseBlock()}
+			} else {
+				// No body, just a declaration
+				paramTy := make([]TypeExpr, len(params))
+				for i, param := range params {
+					paramTy[i] = param.Ty
+				}
+				return VarsDecl{[]string{name}, FuncTypeExpr{false, paramTy, ret}}
+			}
 		},
 
 		TKvar: func(p *parser, tok Token) Toplevel {
