@@ -45,21 +45,26 @@ func init() {
 			return ns
 		},
 
+		TKextern: func(p *parser, tok Token) Toplevel {
+			if vd, ok := p.parseToplevel().(VarsDecl); ok {
+				vd.Extern = true
+				return vd
+			}
+			panic("Expected variable declaration")
+		},
 		TKpub: func(p *parser, tok Token) Toplevel {
-			switch tl := p.parseToplevel().(type) {
-			case Function:
-				tl.Pub = true
-				return tl
+			if fn, ok := p.parseToplevel().(Function); ok {
+				fn.Pub = true
+				return fn
 			}
 			panic("Expected function")
 		},
 		TKvariadic: func(p *parser, tok Token) Toplevel {
-			switch tl := p.parseToplevel().(type) {
-			case VarsDecl:
-				if ty, ok := tl.Ty.(FuncTypeExpr); ok {
+			if vd, ok := p.parseToplevel().(VarsDecl); ok {
+				if ty, ok := vd.Ty.(FuncTypeExpr); ok {
 					ty.Var = true
-					tl.Ty = ty
-					return tl
+					vd.Ty = ty
+					return vd
 				}
 			}
 			panic("Expected function declaration")
@@ -84,7 +89,7 @@ func init() {
 				for i, param := range params {
 					paramTy[i] = param.Ty
 				}
-				return VarsDecl{[]string{name}, FuncTypeExpr{false, paramTy, ret}}
+				return VarsDecl{true, []string{name}, FuncTypeExpr{false, paramTy, ret}}
 			}
 		},
 

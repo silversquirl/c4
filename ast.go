@@ -25,8 +25,9 @@ type VarDecl struct {
 	Ty   TypeExpr
 }
 type VarsDecl struct {
-	Names []string
-	Ty    TypeExpr
+	Extern bool
+	Names  []string
+	Ty     TypeExpr
 }
 
 func (d VarsDecl) Decls() []VarDecl {

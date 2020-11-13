@@ -285,7 +285,7 @@ func TestNestedArithmetic(t *testing.T) {
 
 func TestVariables(t *testing.T) {
 	testCompile(t, `
-		var global I32
+		extern var global I32
 		pub fn main() I32 {
 			var i, j I32
 			i = 7
