@@ -267,6 +267,8 @@ const (
 	TMlor  // '||='
 
 	// Multi-char operators
+	TIncr // '++'
+	TDecr // '--'
 	TShl  // '<<'
 	TShr  // '>>'
 	TLand // '&&'
@@ -329,6 +331,7 @@ func (ty TokenType) autoSemi() bool {
 	case TRParen, TRSquare, TRBrace:
 	case TIdent, TType:
 	case TString, TRune, TInteger, TFloat:
+	case TIncr, TDecr:
 	default:
 		return false
 	}

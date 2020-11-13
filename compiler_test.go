@@ -209,6 +209,25 @@ func TestMutate(t *testing.T) {
 		m("shl")+m("sar"))
 }
 
+func TestIncrDecr(t *testing.T) {
+	testMainCompile(t, `
+		var a I32
+		a++
+		a--
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
+		%t2 =w loadw %t1
+		%t3 =w add %t2, 1
+		storew %t3, %t1
+
+		%t4 =w loadw %t1
+		%t5 =w sub %t4, 1
+		storew %t5, %t1
+	`)
+}
+
 // TODO: test unsigned div, mod and shr
 func TestArithmetic(t *testing.T) {
 	testMainCompile(t, `

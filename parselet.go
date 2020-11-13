@@ -345,6 +345,21 @@ func init() {
 		TMland: {PrecAssign, mutate},
 		TMlor:  {PrecAssign, mutate},
 
+		TIncr: {PrecAssign, func(prec int, p *parser, tok Token, left Expression) Expression {
+			if l, ok := left.(LValue); !ok {
+				panic("Mutate of non-lvalue")
+			} else {
+				return MutateExpr{BinAdd, l, IntegerExpr("1")}
+			}
+		}},
+		TDecr: {PrecAssign, func(prec int, p *parser, tok Token, left Expression) Expression {
+			if l, ok := left.(LValue); !ok {
+				panic("Mutate of non-lvalue")
+			} else {
+				return MutateExpr{BinSub, l, IntegerExpr("1")}
+			}
+		}},
+
 		TLParen: {PrecCall, func(prec int, p *parser, tok Token, left Expression) Expression {
 			call := CallExpr{Func: left}
 			for l := p.list(TComma, TRParen); l.next(); {
