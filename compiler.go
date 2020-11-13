@@ -468,6 +468,7 @@ func (s IRString) String() string {
 }
 
 type CallOperand struct {
+	Var  bool // Variadic?
 	Func Operand
 	Args []TypedOperand
 }
@@ -487,6 +488,9 @@ func (c CallOperand) Operand() string {
 		b.WriteString(arg.Ty)
 		b.WriteRune(' ')
 		b.WriteString(arg.Op.Operand())
+	}
+	if c.Var {
+		b.WriteString(", ...")
 	}
 	b.WriteRune(')')
 	return b.String()

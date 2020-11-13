@@ -108,7 +108,7 @@ func TestVariadicFunction(t *testing.T) {
 	`, `
 		function $bar() {
 		@start
-			call $foo(l 1, l 2)
+			call $foo(l 1, l 2, ...)
 			ret
 		}
 	`)

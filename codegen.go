@@ -191,7 +191,7 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 		f = e.Func.(LValue).GenPointer(c)
 	}
 
-	call := CallOperand{f, make([]TypedOperand, len(e.Args))}
+	call := CallOperand{t.Var, f, make([]TypedOperand, len(e.Args))}
 	for i, arg := range e.Args {
 		// TODO: type-check arguments
 		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName(c)
