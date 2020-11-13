@@ -186,10 +186,11 @@ func (c *Compiler) EndFunction() {
 	}
 	c.Writef("}\n")
 
-	// Reset counters
+	// Reset local information
 	c.temp = 0
 	c.blk = 0
 	c.ret = false
+	c.vars = map[string]Variable{}
 }
 
 type IRParam struct {

@@ -135,6 +135,35 @@ func TestNamespace(t *testing.T) {
 	`)
 }
 
+func TestScope(t *testing.T) {
+	testCompile(t, `
+		fn foo() {}
+		fn bar() {
+			var foo I32
+		}
+		fn baz() {
+			var foo I32
+		}
+	`, `
+		function $foo() {
+		@start
+			ret
+		}
+		function $bar() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			ret
+		}
+		function $baz() {
+		@start
+			%t1 =l alloc4 4
+			storew 0, %t1
+			ret
+		}
+	`)
+}
+
 func TestReturn0(t *testing.T) {
 	testMainCompile(t, "", "")
 }
