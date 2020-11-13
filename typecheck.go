@@ -96,6 +96,9 @@ func (e RefExpr) TypeOf(c *Compiler) Type {
 
 func (e DerefExpr) TypeOf(c *Compiler) Type {
 	if t, ok := e.V.TypeOf(c).Concrete().(PointerType); ok {
+		if t.To == nil {
+			panic("Generic pointer may not be dereferenced")
+		}
 		return t.To
 	} else {
 		panic("Dereference of non-pointer type")

@@ -967,6 +967,13 @@ func TestGenericPointer(t *testing.T) {
 		%t6 =l loadl %t1
 		storel %t6, %t4
 	`)
+
+	testCompileFailure(t, "Generic pointer may not be dereferenced", `
+		fn f() {
+			var p []
+			_ = [p]
+		}
+	`)
 }
 
 func TestFunctionCall(t *testing.T) {
