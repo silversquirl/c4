@@ -388,6 +388,19 @@ func init() {
 			return NamedTypeExpr(tok.S)
 		},
 
+		TIdent: func(p *parser, tok Token) TypeExpr {
+			path := []string{tok.S}
+			p.require(TDot)
+			for {
+				tok := p.require(TIdent, TType)
+				path = append(path, tok.S)
+				if tok.Ty == TType {
+					return NamespaceTypeExpr(path)
+				}
+				p.require(TDot)
+			}
+		},
+
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
 			if to == nil {

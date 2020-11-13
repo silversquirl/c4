@@ -208,6 +208,9 @@ func (e RuneExpr) Format(indent int) string {
 func (name NamedTypeExpr) Format(indent int) string {
 	return string(name)
 }
+func (ns NamespaceTypeExpr) Format(indent int) string {
+	return strings.Join([]string(ns), ".")
+}
 func (ptr PointerTypeExpr) Format(indent int) string {
 	return "[" + ptr.To.Format(indent) + "]"
 }

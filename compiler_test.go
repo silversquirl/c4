@@ -118,8 +118,10 @@ func TestNamespace(t *testing.T) {
 	testCompile(t, `
 		ns foo {
 			fn bar() {}
+			type Bar I8
 		}
 		fn bar() {
+			var x foo.Bar
 			foo.bar()
 		}
 	`, `
@@ -129,6 +131,8 @@ func TestNamespace(t *testing.T) {
 		}
 		function $bar() {
 		@start
+			%t1 =l alloc4 1
+			storeb 0, %t1
 			call $foo.bar()
 			ret
 		}

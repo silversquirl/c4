@@ -16,12 +16,11 @@ type Compiler struct {
 	temp Temporary
 	ret  bool // True if the last emitted instruction was `ret`
 
-	ns   []Namespace             // Namespace stack
-	typs map[string]ConcreteType // Type names
-	comp []CompositeLayout       // Composite types
-	vars map[string]Variable     // Local variable names
-	strs []IRString              // String constants
-	strM map[string]int          // Map from string to index of entry in strs
+	ns   []Namespace         // Namespace stack
+	comp []CompositeLayout   // Composite types
+	vars map[string]Variable // Local variable names
+	strs []IRString          // String constants
+	strM map[string]int      // Map from string to index of entry in strs
 }
 
 type CompileResult struct {
@@ -49,24 +48,26 @@ func (r *CompileResult) WriteTo(w io.Writer) (n int64, err error) {
 
 func NewCompiler() *Compiler {
 	c := &Compiler{}
-	c.typs = map[string]ConcreteType{
-		"I64": TypeI64,
-		"I32": TypeI32,
-		"I16": TypeI16,
-		"I8":  TypeI8,
-
-		"U64": TypeU64,
-		"U32": TypeU32,
-		"U16": TypeU16,
-		"U8":  TypeU8,
-
-		"F64": TypeF64,
-		"F32": TypeF32,
-
-		"Bool": TypeBool,
-	}
 	c.r = &CompileResult{}
-	c.ns = []Namespace{{"", map[string]Type{}}}
+	c.ns = []Namespace{{
+		"", map[string]Type{},
+		map[string]ConcreteType{
+			"I64": TypeI64,
+			"I32": TypeI32,
+			"I16": TypeI16,
+			"I8":  TypeI8,
+
+			"U64": TypeU64,
+			"U32": TypeU32,
+			"U16": TypeU16,
+			"U8":  TypeU8,
+
+			"F64": TypeF64,
+			"F32": TypeF32,
+
+			"Bool": TypeBool,
+		},
+	}}
 	c.vars = map[string]Variable{}
 	c.strM = map[string]int{}
 	return c
@@ -124,7 +125,7 @@ func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands 
 
 func (c *Compiler) StartNamespace(name string) {
 	cur := c.ns[len(c.ns)-1]
-	ns := Namespace{cur.Name + name + ".", map[string]Type{}}
+	ns := Namespace{cur.Name + name + ".", map[string]Type{}, map[string]ConcreteType{}}
 	cur.Vars[name] = ns
 	c.ns = append(c.ns, ns)
 }
@@ -213,18 +214,39 @@ func (c *Compiler) Temporary() Temporary {
 }
 
 func (c *Compiler) AliasType(name string, ty ConcreteType) {
-	if _, ok := c.typs[name]; ok {
+	cur := c.ns[len(c.ns)-1]
+	if _, ok := cur.Typs[name]; ok {
 		panic("Type already exists")
 	}
-	c.typs[name] = ty
+	cur.Typs[name] = ty
 }
 func (c *Compiler) DefineType(name string, typ ConcreteType) NamedType {
-	ty := NamedType{typ, name}
+	cur := c.ns[len(c.ns)-1]
+	ty := NamedType{typ, cur.Name + name}
 	c.AliasType(name, ty)
 	return ty
 }
-func (c *Compiler) Type(name string) ConcreteType {
-	return c.typs[name]
+func (c *Compiler) Type(path ...string) ConcreteType {
+	name, path := path[len(path)-1], path[:len(path)-1]
+
+	if len(path) == 0 {
+		if ty, ok := c.ns[len(c.ns)-1].Typs[name]; ok {
+			return ty
+		}
+	}
+
+	ns := c.ns[0]
+	for _, elem := range path {
+		var ok bool
+		if ns, ok = ns.Vars[elem].(Namespace); !ok {
+			panic(elem + " is not a namespace")
+		}
+	}
+	if ty, ok := ns.Typs[name]; ok {
+		return ty
+	}
+
+	panic("Unknown type: " + name)
 }
 
 func (c *Compiler) CompositeType(layout CompositeLayout) string {

@@ -57,6 +57,7 @@ type NumericType interface {
 type Namespace struct {
 	Name string
 	Vars map[string]Type
+	Typs map[string]ConcreteType
 }
 
 func (ns Namespace) IsConcrete() bool         { return false }
