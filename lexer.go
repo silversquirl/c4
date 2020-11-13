@@ -335,6 +335,7 @@ func (ty TokenType) autoSemi() bool {
 	case TIdent, TType:
 	case TString, TRune, TInteger, TFloat:
 	case TIncr, TDecr:
+	case TKreturn:
 	default:
 		return false
 	}

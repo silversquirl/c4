@@ -172,6 +172,19 @@ func TestReturn0(t *testing.T) {
 	testMainCompile(t, "", "")
 }
 
+func TestReturnVoid(t *testing.T) {
+	testCompile(t, `
+		fn f() {
+			return
+		}
+	`, `
+		function $f() {
+		@start
+			ret
+		}
+	`)
+}
+
 func TestPrefixExpr(t *testing.T) {
 	testMainCompile(t, `
 		_ = !3

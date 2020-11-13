@@ -74,13 +74,13 @@ func TestAutoSemi(t *testing.T) {
 		`==`, `!=`, `<=`, `>=`,
 
 		`else`, `extern`, `fn`, `for`,
-		`if`, `pub`, `return`, `type`,
-		`var`,
+		`if`, `pub`, `type`, `var`,
 
 		// Auto-semi tokens
 		`)`, `]`, `}`,
 		`foo`, `Foo`,
 		`""`, `'a'`, `0`, `0.`,
+		`return`,
 		``,
 	}, "\n"), []Token{
 		// Non-auto-semi tokens
@@ -95,14 +95,13 @@ func TestAutoSemi(t *testing.T) {
 		{46, TCeq, "=="}, {49, TCne, "!="}, {52, TCle, "<="}, {55, TCge, ">="},
 
 		{58, TKelse, "else"}, {63, TKextern, "extern"}, {70, TKfn, "fn"}, {73, TKfor, "for"},
-		{77, TKif, "if"}, {80, TKpub, "pub"}, {84, TKreturn, "return"}, {91, TKtype, "type"},
-		{96, TKvar, "var"},
+		{77, TKif, "if"}, {80, TKpub, "pub"}, {84, TKtype, "type"}, {89, TKvar, "var"},
 
 		// Non-auto-semi tokens
-		{100, TRParen, ")"}, {101, TSemi, "\n"}, {102, TRSquare, "]"}, {103, TSemi, "\n"},
-		{104, TRBrace, "}"}, {105, TSemi, "\n"}, {106, TIdent, "foo"}, {109, TSemi, "\n"},
-		{110, TType, "Foo"}, {113, TSemi, "\n"}, {114, TString, ""}, {116, TSemi, "\n"},
-		{117, TRune, "a"}, {120, TSemi, "\n"}, {121, TInteger, "0"}, {122, TSemi, "\n"},
-		{123, TFloat, "0."}, {125, TSemi, "\n"},
+		{93, TRParen, ")"}, {94, TSemi, "\n"}, {95, TRSquare, "]"}, {96, TSemi, "\n"},
+		{97, TRBrace, "}"}, {98, TSemi, "\n"}, {99, TIdent, "foo"}, {102, TSemi, "\n"},
+		{103, TType, "Foo"}, {106, TSemi, "\n"}, {107, TString, ""}, {109, TSemi, "\n"},
+		{110, TRune, "a"}, {113, TSemi, "\n"}, {114, TInteger, "0"}, {115, TSemi, "\n"},
+		{116, TFloat, "0."}, {118, TSemi, "\n"}, {119, TKreturn, "return"}, {125, TSemi, "\n"},
 	})
 }

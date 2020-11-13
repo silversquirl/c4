@@ -130,8 +130,12 @@ func (p *parser) parseStatement() Statement {
 func init() {
 	statementParselets = map[TokenType]statementParselet{
 		TKreturn: func(p *parser, tok Token) Statement {
-			e := p.parseExpression(0)
-			return ReturnStmt{e}
+			if p.accept(TSemi) {
+				return ReturnStmt{}
+			} else {
+				e := p.parseExpression(0)
+				return ReturnStmt{e}
+			}
 		},
 		TKvar: func(p *parser, tok Token) Statement {
 			return p.parseVarTypes()
