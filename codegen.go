@@ -453,9 +453,9 @@ func (op BooleanOperator) Emit(c *Compiler, v Operand, longB, shortB Block) {
 	var a, b Block
 	switch op {
 	case BoolAnd:
-		a, b = shortB, longB
-	case BoolOr:
 		a, b = longB, shortB
+	case BoolOr:
+		a, b = shortB, longB
 	default:
 		panic("Invalid boolean operator")
 	}
