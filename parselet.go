@@ -129,8 +129,14 @@ func (p *parser) parseStatement() Statement {
 
 func init() {
 	statementParselets = map[TokenType]statementParselet{
+		TKbreak: func(p *parser, tok Token) Statement {
+			return BreakStmt{}
+		},
+		TKcontinue: func(p *parser, tok Token) Statement {
+			return ContinueStmt{}
+		},
 		TKreturn: func(p *parser, tok Token) Statement {
-			if p.accept(TSemi) {
+			if p.peek() == TSemi {
 				return ReturnStmt{}
 			} else {
 				e := p.parseExpression(0)

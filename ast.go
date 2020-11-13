@@ -62,6 +62,9 @@ type ForStmt struct {
 	Body       []Statement
 }
 
+type BreakStmt struct{}
+type ContinueStmt struct{}
+
 type ReturnStmt struct {
 	Value Expression
 }

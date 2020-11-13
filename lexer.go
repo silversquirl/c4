@@ -303,7 +303,9 @@ const (
 
 	// Keywords
 	TKeywordStart
+	TKbreak    // 'break'
 	TKcast     // 'cast'
+	TKcontinue // 'continue'
 	TKelse     // 'else'
 	TKextern   // 'extern'
 	TKfn       // 'fn'
@@ -335,7 +337,7 @@ func (ty TokenType) autoSemi() bool {
 	case TIdent, TType:
 	case TString, TRune, TInteger, TFloat:
 	case TIncr, TDecr:
-	case TKreturn:
+	case TKbreak, TKcontinue, TKreturn:
 	default:
 		return false
 	}

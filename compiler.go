@@ -16,6 +16,7 @@ type Compiler struct {
 	temp Temporary
 	ret  bool // True if the last emitted instruction was `ret`
 
+	loop []Loop              // Loop stack
 	ns   []Namespace         // Namespace stack
 	comp []CompositeLayout   // Composite types
 	vars map[string]Variable // Local variable names
@@ -208,6 +209,16 @@ func (c *Compiler) StartBlock(block Block) {
 func (c *Compiler) Block() Block {
 	c.blk++
 	return c.blk
+}
+
+func (c *Compiler) StartLoop(start, end Block) {
+	c.loop = append(c.loop, Loop{start, end})
+}
+func (c *Compiler) EndLoop() {
+	c.loop = c.loop[:len(c.loop)-1]
+}
+func (c *Compiler) Loop() Loop {
+	return c.loop[len(c.loop)-1]
 }
 
 func (c *Compiler) Temporary() Temporary {
@@ -405,6 +416,10 @@ func (b Block) Operand() string {
 }
 func (b Block) String() string {
 	return b.Operand()
+}
+
+type Loop struct {
+	Start, End Block
 }
 
 type Temporary uint

@@ -86,6 +86,8 @@ func (f ForStmt) GenStatement(c *Compiler) {
 	bodyB := c.Block()
 	endB := c.Block()
 
+	c.StartLoop(startB, endB)
+
 	// TODO: scope
 	if f.Init != nil {
 		f.Init.GenStatement(c)
@@ -107,6 +109,17 @@ func (f ForStmt) GenStatement(c *Compiler) {
 	}
 	c.Insn(0, 0, "jmp", startB)
 	c.StartBlock(endB)
+
+	c.EndLoop()
+}
+
+func (_ BreakStmt) GenStatement(c *Compiler) {
+	c.Insn(0, 0, "jmp", c.Loop().End)
+	c.StartBlock(c.Block())
+}
+func (_ ContinueStmt) GenStatement(c *Compiler) {
+	c.Insn(0, 0, "jmp", c.Loop().Start)
+	c.StartBlock(c.Block())
 }
 
 func (r ReturnStmt) GenStatement(c *Compiler) {

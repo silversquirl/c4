@@ -112,6 +112,13 @@ func (f ForStmt) Format(indent int) string {
 	return b.String()
 }
 
+func (_ BreakStmt) Format(indent int) string {
+	return "break"
+}
+func (_ ContinueStmt) Format(indent int) string {
+	return "continue"
+}
+
 func (r ReturnStmt) Format(indent int) string {
 	return "return " + r.Value.Format(indent)
 }

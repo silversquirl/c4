@@ -944,6 +944,43 @@ func TestFor3(t *testing.T) {
 	`)
 }
 
+func TestBreakContinue(t *testing.T) {
+	testMainCompile(t, `
+		var a I32
+		for {
+			a = 0
+			break
+			a = 1
+		}
+		for {
+			a = 2
+			continue
+			a = 3
+		}
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+
+	@b1
+	@b2
+		storew 0, %t1
+		jmp @b3
+	@b4
+		storew 1, %t1
+		jmp @b1
+	@b3
+
+	@b5
+	@b6
+		storew 2, %t1
+		jmp @b5
+	@b8
+		storew 3, %t1
+		jmp @b5
+	@b7
+	`)
+}
+
 func TestReferenceVariable(t *testing.T) {
 	testMainCompile(t, `
 		var i I32
