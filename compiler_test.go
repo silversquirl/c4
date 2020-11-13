@@ -551,6 +551,37 @@ func TestFieldAccess(t *testing.T) {
 	`)
 }
 
+func TestAccessPointer(t *testing.T) {
+	testCompile(t, `
+		type Foo struct { a, b I32; c I64 }
+		fn f() {
+			var foo [Foo]
+			_ = foo.a
+			_ = foo.b
+			_ = foo.c
+		}
+	`, `
+		function $f() {
+		@start
+			%t1 =l alloc8 8
+			storel 0, %t1
+
+			%t2 =l loadl %t1
+			%t3 =w loadw %t2
+
+			%t4 =l loadl %t1
+			%t5 =l add %t4, 4
+			%t6 =w loadw %t5
+
+			%t7 =l loadl %t1
+			%t8 =l add %t7, 8
+			%t9 =l loadl %t8
+
+			ret
+		}
+	`)
+}
+
 func TestSmallTypes(t *testing.T) {
 	testMainCompile(t, `
 		var i, j I16

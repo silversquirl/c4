@@ -18,6 +18,7 @@ func main() {
 	ld := flag.String("ld", "cc", "`name` of linker to use")
 	verbose := flag.Bool("v", false, "verbose output")
 	irOut := flag.Bool("i", false, "output intermediate representation of the program")
+	obj := flag.Bool("c", false, "output an object file")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -26,12 +27,21 @@ func main() {
 
 	if *out == "" {
 		file := flag.Arg(0)
-		*out = strings.TrimSuffix(file, filepath.Ext(file))
+		file = strings.TrimSuffix(file, filepath.Ext(file))
+		if *obj {
+			*out = file + ".o"
+		} else {
+			*out = file
+		}
 	}
 
-	link := true
-	if *irOut {
-		link = false
+	if *obj && *irOut {
+		log.Fatal("-c and -i are incompatible")
+	}
+	link := !(*obj || *irOut)
+
+	if *obj && flag.NArg() > 1 {
+		log.Fatal("-c requires only one source file")
 	}
 
 	tmpDir, err := ioutil.TempDir("", "c4-build-*")
@@ -62,11 +72,17 @@ func main() {
 			log.Fatal(err)
 		}
 
-		objFile, err := ioutil.TempFile(tmpDir, "*.o")
-		if err != nil {
-			log.Fatal(err)
+		var objFile string
+		if *obj {
+			objFile = *out
+		} else {
+			f, err := ioutil.TempFile(tmpDir, "*.o")
+			if err != nil {
+				log.Fatal(err)
+			}
+			f.Close() // I wish I could pass the fd directly to as
+			objFile = f.Name()
 		}
-		objFile.Close() // I wish I could pass the fd directly to as
 
 		var qbeCmd, asCmd *exec.Cmd
 		if !*irOut {
@@ -78,9 +94,13 @@ func main() {
 				log.Fatal(err)
 			}
 
-			asCmd = exec.Command(*as, "-o", objFile.Name(), "-")
+			if *obj {
+				asCmd = exec.Command(*as, "-c", "-o", objFile, "-")
+			} else {
+				asCmd = exec.Command(*as, "-o", objFile, "-")
+			}
 			asCmd.Stdin = asR
-			asCmd.Stdout = objFile
+			asCmd.Stdout = os.Stdout
 			asCmd.Stderr = os.Stderr
 			if err := asCmd.Start(); err != nil {
 				log.Fatal(err)
@@ -105,7 +125,7 @@ func main() {
 			}
 		}
 
-		objs = append(objs, objFile.Name())
+		objs = append(objs, objFile)
 	}
 
 	if link {

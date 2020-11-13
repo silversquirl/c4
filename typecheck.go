@@ -25,8 +25,16 @@ func (e AccessExpr) TypeOf(c *Compiler) Type {
 		return ns.Vars[e.R]
 	}
 
-	if lty, ok := lty.Concrete().(CompositeType); ok {
-		f := lty.Field(e.R)
+	for {
+		if p, ok := lty.Concrete().(PointerType); ok {
+			lty = p.To
+		} else {
+			break
+		}
+	}
+
+	if comp, ok := lty.Concrete().(CompositeType); ok {
+		f := comp.Field(e.R)
 		if f == nil {
 			panic("No such field: " + e.R)
 		}

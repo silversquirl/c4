@@ -129,16 +129,25 @@ func (e AccessExpr) GenPointer(c *Compiler) Operand {
 	lty := e.L.TypeOf(c)
 	if ns, ok := lty.(Namespace); ok {
 		return Global(ns.Name + e.R)
-	} else {
-		lty := lty.Concrete().(CompositeType)
-		l := e.L.GenPointer(c)
-		if off := lty.Offset(e.R); off > 0 {
-			t := c.Temporary()
-			c.Insn(t, 'l', "add", l, IRInt(off))
-			return t
+	}
+
+	l := e.L.GenPointer(c)
+	for {
+		if p, ok := lty.Concrete().(PointerType); ok {
+			lty = p.To
+			l = genPtrLoad(l, PointerType{}, c)
 		} else {
-			return l
+			break
 		}
+	}
+
+	comp := lty.Concrete().(CompositeType)
+	if off := comp.Offset(e.R); off > 0 {
+		t := c.Temporary()
+		c.Insn(t, 'l', "add", l, IRInt(off))
+		return t
+	} else {
+		return l
 	}
 }
 func (e AccessExpr) GenExpression(c *Compiler) Operand {
