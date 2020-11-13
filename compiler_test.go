@@ -278,6 +278,10 @@ func TestComparison(t *testing.T) {
 		_ = 4 > 2
 		_ = 4 <= 2
 		_ = 4 >= 2
+
+		var i I32
+		_ = 4 == i
+		_ = i == 2
 	`, `
 		%t1 =l ceql 4, 2
 		%t2 =l cnel 4, 2
@@ -285,6 +289,13 @@ func TestComparison(t *testing.T) {
 		%t4 =l csgtl 4, 2
 		%t5 =l cslel 4, 2
 		%t6 =l csgel 4, 2
+
+		%t7 =l alloc4 4
+		storew 0, %t7
+		%t8 =w loadw %t7
+		%t9 =w ceqw 4, %t8
+		%t10 =w loadw %t7
+		%t11 =w ceqw %t10, 2
 	`)
 }
 

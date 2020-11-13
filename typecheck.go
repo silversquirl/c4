@@ -142,6 +142,11 @@ func (e PrefixExpr) TypeOf(c *Compiler) Type {
 func (e BinaryExpr) TypeOf(c *Compiler) Type {
 	ltyp := e.L.TypeOf(c)
 	rtyp := e.R.TypeOf(c)
+
+	if !ltyp.IsConcrete() && rtyp.IsConcrete() {
+		ltyp, rtyp = rtyp, ltyp
+	}
+
 	_, lptr := ltyp.Concrete().(PointerType)
 	_, rptr := rtyp.Concrete().(PointerType)
 
