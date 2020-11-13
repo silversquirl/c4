@@ -537,7 +537,29 @@ func TestRecursiveType(t *testing.T) {
 		type Foo struct {
 			foo [Foo]
 		}
-	`, ``)
+		type Bar struct {
+			foo [Foo]
+			_ U32
+		}
+		var foo Bar
+		fn f(bar Bar) Foo {
+			foo.foo = bar.foo
+			return bar.foo.foo
+		}
+	`, `
+		type :l = { l }
+		type :lw = { l, w }
+		function :l $f(:lw %t1) {
+		@start
+			%t2 =l loadl %t1
+			storel %t2, $foo
+
+			%t3 =l loadl %t1
+			%t4 =l loadl %t3
+			ret %t4
+		}
+		data $foo = align 8 { z 16 }
+	`)
 }
 
 func TestCompositeReturn(t *testing.T) {

@@ -172,13 +172,14 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 
 	// Add args to locals
 	for i, param := range params {
-		loc := c.Temporary()
-		c.vars[param.Name] = Variable{loc, param.Ty}
+		loc := ptemps[i]
 		if param.Ty.IRBaseTypeName() != 0 {
 			// If it's a primitive, we need to alloc and copy
+			loc = c.Temporary()
 			c.allocLocal(loc, param.Ty)
 			c.Insn(0, 0, "store"+param.Ty.IRTypeName(c), ptemps[i], loc)
 		}
+		c.vars[param.Name] = Variable{loc, param.Ty}
 	}
 }
 
