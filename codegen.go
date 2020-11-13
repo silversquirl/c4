@@ -30,7 +30,7 @@ func (f Function) GenToplevel(c *Compiler) {
 		ret = ty.Ret.IRTypeName(c)
 	}
 	c.StartFunction(f.Pub, f.Name, params, ret)
-	c.DeclareGlobal(f.Name, ty)
+	c.DeclareGlobal(true, f.Name, ty)
 
 	for _, stmt := range f.Body {
 		stmt.GenStatement(c)
@@ -48,7 +48,7 @@ func (d VarsDecl) GenStatement(c *Compiler) {
 func (d VarsDecl) GenToplevel(c *Compiler) {
 	ty := d.Ty.Get(c)
 	for _, name := range d.Names {
-		c.DeclareGlobal(name, ty)
+		c.DeclareGlobal(d.Extern, name, ty)
 	}
 }
 

@@ -21,6 +21,7 @@ type Compiler struct {
 	vars map[string]Variable // Local variable names
 	strs []IRString          // String constants
 	strM map[string]int      // Map from string to index of entry in strs
+	data []Variable          // Global data
 }
 
 type CompileResult struct {
@@ -269,12 +270,15 @@ func (c *Compiler) CompositeType(layout CompositeLayout) string {
 	return ident
 }
 
-func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) {
+func (c *Compiler) DeclareGlobal(extern bool, name string, ty ConcreteType) {
 	cur := c.ns[len(c.ns)-1]
 	if _, ok := cur.Vars[name]; ok {
 		panic("Variable already exists")
 	}
-	cur.Vars[name] = typ
+	cur.Vars[name] = ty
+	if !extern {
+		c.data = append(c.data, Variable{Global(cur.Name + name), ty})
+	}
 }
 func (c *Compiler) allocLocal(loc Temporary, ty ConcreteType) {
 	m := ty.Metrics()
@@ -331,14 +335,20 @@ func (c *Compiler) String(str string) Global {
 }
 
 func (c *Compiler) Finish() {
-	// Write all strings
+	// Write composite types
+	for _, layout := range c.comp {
+		layout.GenType(c)
+	}
+
+	// Write strings
 	for i, str := range c.strs {
 		c.Writef("data $str%d = %s\n", i, str)
 	}
 
-	// Write all composite types
-	for _, layout := range c.comp {
-		layout.GenType(c)
+	// Write global data
+	for _, data := range c.data {
+		m := data.Ty.Concrete().Metrics()
+		c.Writef("data %s = align %d { z %d }\n", data.Loc, m.Align, m.Size)
 	}
 }
 

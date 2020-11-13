@@ -283,37 +283,44 @@ func TestNestedArithmetic(t *testing.T) {
 	`)
 }
 
-func TestVariables(t *testing.T) {
+func TestLocalVariables(t *testing.T) {
+	testMainCompile(t, `
+		var i, j I32
+		i = 7
+		j = 5
+		i = i + j
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+		%t2 =l alloc4 4
+		storew 0, %t2
+
+		storew 7, %t1
+		storew 5, %t2
+
+		%t3 =w loadw %t1
+		%t4 =w loadw %t2
+		%t5 =w add %t3, %t4
+		storew %t5, %t1
+	`)
+}
+
+func TestGlobalVariables(t *testing.T) {
 	testCompile(t, `
-		extern var global I32
+		extern var foo I32
+		var bar I32
 		pub fn main() I32 {
-			var i, j I32
-			i = 7
-			j = 5
-			i = i + j
-			return i + global
+			return foo + bar
 		}
 	`, `
 		export function w $main() {
 		@start
-			%t1 =l alloc4 4
-			storew 0, %t1
-			%t2 =l alloc4 4
-			storew 0, %t2
-
-			storew 7, %t1
-			storew 5, %t2
-
-			%t3 =w loadw %t1
-			%t4 =w loadw %t2
-			%t5 =w add %t3, %t4
-			storew %t5, %t1
-
-			%t6 =w loadw %t1
-			%t7 =w loadw $global
-			%t8 =w add %t6, %t7
-			ret %t8
+			%t1 =w loadw $foo
+			%t2 =w loadw $bar
+			%t3 =w add %t1, %t2
+			ret %t3
 		}
+		data $bar = align 4 { z 4 }
 	`)
 }
 
