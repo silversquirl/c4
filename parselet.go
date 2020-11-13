@@ -1,5 +1,7 @@
 package main
 
+import "strconv"
+
 type toplevelParselet func(*parser, Token) Toplevel
 type statementParselet func(*parser, Token) Statement
 type prefixExprParselet struct {
@@ -432,8 +434,13 @@ func init() {
 
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
-			p.require(TRSquare)
-			return PointerTypeExpr{to}
+			if tok := p.require(TInteger, TRSquare); tok.Ty == TInteger {
+				p.require(TRSquare)
+				n, _ := strconv.Atoi(tok.S)
+				return ArrayTypeExpr{to, n}
+			} else {
+				return PointerTypeExpr{to}
+			}
 		},
 
 		TKfn: func(p *parser, tok Token) TypeExpr {

@@ -997,6 +997,56 @@ func TestGenericPointer(t *testing.T) {
 	`)
 }
 
+func TestArrayType(t *testing.T) {
+	testCompile(t, `
+		type Foo struct {
+			a [U64 4]
+		}
+		fn f() {
+			var foo Foo
+			[foo.a + 2] = 1
+			var a [U8 7]
+			[a + 2] = 1
+		}
+	`, `
+		function $f() {
+		@start
+			%t1 =l alloc8 32
+			storel 0, %t1
+			%t2 =l add %t1, 8
+			storel 0, %t2
+			%t3 =l add %t1, 16
+			storel 0, %t3
+			%t4 =l add %t1, 24
+			storel 0, %t4
+
+			%t5 =l mul 8, 2
+			%t6 =l add %t1, %t5
+			storel 1, %t6
+
+			%t7 =l alloc4 7
+			storeb 0, %t7
+			%t8 =l add %t7, 1
+			storeb 0, %t8
+			%t9 =l add %t7, 2
+			storeb 0, %t9
+			%t10 =l add %t7, 3
+			storeb 0, %t10
+			%t11 =l add %t7, 4
+			storeb 0, %t11
+			%t12 =l add %t7, 5
+			storeb 0, %t12
+			%t13 =l add %t7, 6
+			storeb 0, %t13
+
+			%t14 =l add %t7, 2
+			storeb 1, %t14
+
+			ret
+		}
+	`)
+}
+
 func TestFunctionCall(t *testing.T) {
 	testCompile(t, `
 		fn foo(i I64)

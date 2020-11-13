@@ -75,6 +75,7 @@ type Expression interface {
 type LValue interface {
 	Expression
 	GenPointer(c *Compiler) Operand
+	genPointer(c *Compiler) (Operand, Type)
 }
 
 type VarExpr string
@@ -137,6 +138,10 @@ type TypeExpr interface {
 type NamedTypeExpr string
 type NamespaceTypeExpr []string
 type PointerTypeExpr struct{ To TypeExpr }
+type ArrayTypeExpr struct {
+	Ty TypeExpr
+	N  int
+}
 type FuncTypeExpr struct {
 	Var   bool // true if the function uses C-style varags
 	Param []TypeExpr

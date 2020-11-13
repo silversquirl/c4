@@ -38,6 +38,9 @@ func (e AccessExpr) TypeOf(c *Compiler) Type {
 		if f == nil {
 			panic("No such field: " + e.R)
 		}
+		if a, ok := f.Concrete().(ArrayType); ok {
+			return a.ptr()
+		}
 		return f
 	}
 
@@ -100,7 +103,13 @@ func (e CastExpr) TypeOf(c *Compiler) Type {
 }
 
 func (e VarExpr) TypeOf(c *Compiler) Type {
-	return c.Variable(string(e)).Ty
+	ty := c.Variable(string(e)).Ty
+	if ty.IsConcrete() {
+		if a, ok := ty.Concrete().(ArrayType); ok {
+			return a.ptr()
+		}
+	}
+	return ty
 }
 
 func (e RefExpr) TypeOf(c *Compiler) Type {
@@ -185,14 +194,23 @@ func (ptr PointerTypeExpr) Get(c *Compiler) ConcreteType {
 	}
 	return PointerType{ptr.To.Get(c)}
 }
+func (arr ArrayTypeExpr) Get(c *Compiler) ConcreteType {
+	return ArrayType{arr.Ty.Get(c), arr.N}
+}
 func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {
 	params := make([]ConcreteType, len(fun.Param))
 	for i, param := range fun.Param {
 		params[i] = param.Get(c)
+		if _, ok := params[i].Concrete().(ArrayType); ok {
+			panic("Cannot use an array type as a function parameter")
+		}
 	}
 	var ret ConcreteType
 	if fun.Ret != nil {
 		ret = fun.Ret.Get(c)
+		if _, ok := ret.Concrete().(ArrayType); ok {
+			panic("Cannot use an array type as a function return")
+		}
 	}
 	return FuncType{fun.Var, params, ret}
 }

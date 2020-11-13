@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 func Compatible(a, b Type) bool {
 	if a.Equals(b) || b.Equals(a) {
@@ -258,6 +261,30 @@ func (_ PointerType) IRTypeName(c *Compiler) string {
 }
 func (_ PointerType) IRBaseTypeName() byte {
 	return 'l'
+}
+
+type ArrayType struct {
+	Ty ConcreteType
+	N  int
+}
+
+func (_ ArrayType) Equals(_ Type) bool     { panic("Use of array type") }
+func (_ ArrayType) IsConcrete() bool       { return true }
+func (a ArrayType) Concrete() ConcreteType { return a }
+func (a ArrayType) IRBaseTypeName() byte   { return 0 }
+func (a ArrayType) ptr() PointerType {
+	return PointerType{a.Ty}
+}
+func (a ArrayType) Metrics() TypeMetrics {
+	m := a.Ty.Metrics()
+	m.Size *= a.N
+	return m
+}
+func (a ArrayType) Format(indent int) string {
+	return "[" + a.Ty.Format(indent) + " " + strconv.Itoa(a.N) + "]"
+}
+func (a ArrayType) IRTypeName(c *Compiler) string {
+	return c.CompositeType(CompositeLayout{{a.Ty.IRTypeName(c), a.N}})
 }
 
 type FuncType struct {

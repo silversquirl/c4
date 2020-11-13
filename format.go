@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -217,6 +218,9 @@ func (ns NamespaceTypeExpr) Format(indent int) string {
 }
 func (ptr PointerTypeExpr) Format(indent int) string {
 	return "[" + ptr.To.Format(indent) + "]"
+}
+func (arr ArrayTypeExpr) Format(indent int) string {
+	return arr.Ty.Format(indent) + " " + strconv.Itoa(arr.N)
 }
 func (fun FuncTypeExpr) Format(indent int) string {
 	params := make([]string, len(fun.Param))

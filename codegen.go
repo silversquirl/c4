@@ -125,10 +125,10 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 	e.Expression.GenExpression(c)
 }
 
-func (e AccessExpr) GenPointer(c *Compiler) Operand {
+func (e AccessExpr) genPointer(c *Compiler) (Operand, Type) {
 	lty := e.L.TypeOf(c)
 	if ns, ok := lty.(Namespace); ok {
-		return Global(ns.Name + e.R)
+		return Global(ns.Name + e.R), ns.Vars[e.R]
 	}
 
 	l := e.L.GenPointer(c)
@@ -142,13 +142,17 @@ func (e AccessExpr) GenPointer(c *Compiler) Operand {
 	}
 
 	comp := lty.Concrete().(CompositeType)
+	fty := comp.Field(e.R)
 	if off := comp.Offset(e.R); off > 0 {
 		t := c.Temporary()
 		c.Insn(t, 'l', "add", l, IRInt(off))
-		return t
+		return t, fty
 	} else {
-		return l
+		return l, fty
 	}
+}
+func (e AccessExpr) GenPointer(c *Compiler) Operand {
+	return genLValuePtr(e, c)
 }
 func (e AccessExpr) GenExpression(c *Compiler) Operand {
 	return genLValueExpr(e, c)
@@ -247,31 +251,44 @@ func genPtrLoad(ptr Operand, ty NumericType, c *Compiler) Operand {
 	return tmp
 }
 func genLValueExpr(lv LValue, c *Compiler) Operand {
-	ptr := lv.GenPointer(c)
-	switch ty := lv.TypeOf(c).Concrete().(type) {
+	ptr, ty := lv.genPointer(c)
+	switch ty := ty.Concrete().(type) {
 	case NumericType:
 		return genPtrLoad(ptr, ty, c)
 	default:
 		return ptr
 	}
 }
+func genLValuePtr(lv LValue, c *Compiler) Operand {
+	v, ty := lv.genPointer(c)
+	if _, ok := ty.(ArrayType); ok {
+		panic("Cannot reference array field")
+	}
+	return v
+}
 
-func (e VarExpr) GenExpression(c *Compiler) Operand {
-	return genLValueExpr(e, c)
+func (e VarExpr) genPointer(c *Compiler) (Operand, Type) {
+	return c.Variable(string(e)).Loc, c.Variable(string(e)).Ty
 }
 func (e VarExpr) GenPointer(c *Compiler) Operand {
-	return c.Variable(string(e)).Loc
+	return genLValuePtr(e, c)
+}
+func (e VarExpr) GenExpression(c *Compiler) Operand {
+	return genLValueExpr(e, c)
 }
 
 func (e RefExpr) GenExpression(c *Compiler) Operand {
 	return e.V.GenPointer(c)
 }
 
-func (e DerefExpr) GenExpression(c *Compiler) Operand {
-	return genLValueExpr(e, c)
+func (e DerefExpr) genPointer(c *Compiler) (Operand, Type) {
+	return e.V.GenExpression(c), e.TypeOf(c)
 }
 func (e DerefExpr) GenPointer(c *Compiler) Operand {
-	return e.V.GenExpression(c)
+	return genLValuePtr(e, c)
+}
+func (e DerefExpr) GenExpression(c *Compiler) Operand {
+	return genLValueExpr(e, c)
 }
 
 func (e PrefixExpr) GenExpression(c *Compiler) Operand {
@@ -480,6 +497,20 @@ func (p PrimitiveType) GenZero(c *Compiler, loc Operand) {
 }
 func (p PointerType) GenZero(c *Compiler, loc Operand) {
 	c.Insn(0, 0, "storel", IRInt(0), loc)
+}
+func (a ArrayType) GenZero(c *Compiler, loc Operand) {
+	off := 0
+	m := a.Ty.Metrics()
+	for i := 0; i < a.N; i++ {
+		op := loc
+		if off > 0 {
+			t := c.Temporary()
+			c.Insn(t, 'l', "add", loc, IRInt(off))
+			op = t
+		}
+		a.Ty.GenZero(c, op)
+		off += m.Size
+	}
 }
 func (f FuncType) GenZero(c *Compiler, loc Operand) {
 	panic("Attempted to zero a function type")
