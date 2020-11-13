@@ -65,6 +65,11 @@ func TestHelloWorld(t *testing.T) {
 	`)
 }
 
+func TestInfixPrefix(t *testing.T) {
+	testExpr(t, "1+1", "(1 + 1)")
+	testExpr(t, "1-1", "(1 - 1)")
+}
+
 func TestPrecedence(t *testing.T) {
 	testExpr(t, "-f(a, b)", "-(f(a, b))")
 	testExpr(t, "-a * b", "(-(a) * b)")

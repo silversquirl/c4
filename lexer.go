@@ -173,7 +173,7 @@ func init() {
 			sub = parseString
 		case TInteger:
 			// TODO: type suffixes
-			pat = `[-+]?(?:0x[0-9A-Fa-f_]+|0b[01_]+|0[0-7_]*|[0-9_]+)`
+			pat = `(?:0x[0-9A-Fa-f_]+|0b[01_]+|0[0-7_]*|[0-9_]+)`
 			sub = parseInt
 		case TFloat:
 			// TODO: type suffixes, hex floats(?), exponents

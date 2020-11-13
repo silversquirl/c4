@@ -31,7 +31,7 @@ func TestTokenize(t *testing.T) {
 		elseexternfnforifpubreturntypevar \
 		fooBar _ _foo foo_ \
 		FooBar \
-		"" "hello" 'a' 0 1 -1 0. .0 0.0 1.1 -1.1 \
+		"" "hello" 'a' 0 1 0. .0 0.0 1.1 -1.1 \
 	`, []Token{
 		{16, TSemi, ";"}, {17, TComma, ","}, {18, TLParen, "("}, {19, TRParen, ")"},
 		{20, TLSquare, "["}, {21, TRSquare, "]"}, {22, TLBrace, "{"}, {23, TRBrace, "}"},
@@ -55,8 +55,8 @@ func TestTokenize(t *testing.T) {
 		{211, TIdent, "foo_"}, {220, TType, "FooBar"},
 
 		{231, TString, ""}, {234, TString, "hello"}, {242, TRune, "a"}, {246, TInteger, "0"},
-		{248, TInteger, "1"}, {250, TInteger, "-1"}, {253, TFloat, "0."}, {256, TFloat, ".0"},
-		{259, TFloat, "0.0"}, {263, TFloat, "1.1"}, {267, TFloat, "-1.1"},
+		{248, TInteger, "1"}, {250, TFloat, "0."}, {253, TFloat, ".0"}, {256, TFloat, "0.0"},
+		{260, TFloat, "1.1"}, {264, TFloat, "-1.1"},
 	})
 }
 
