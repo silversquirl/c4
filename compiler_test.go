@@ -532,6 +532,14 @@ func TestUnion(t *testing.T) {
 	`)
 }
 
+func TestRecursiveType(t *testing.T) {
+	testCompile(t, `
+		type Foo struct {
+			foo [Foo]
+		}
+	`, ``)
+}
+
 func TestCompositeReturn(t *testing.T) {
 	testCompile(t, `
 		type S struct { a I32 }

@@ -209,8 +209,8 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 }
 
 func (e CastExpr) GenExpression(c *Compiler) Operand {
-	ty := e.TypeOf(c).(NumericType)
-	vty := e.V.TypeOf(c).(NumericType)
+	ty := e.TypeOf(c).Concrete().(NumericType)
+	vty := e.V.TypeOf(c).Concrete().(NumericType)
 
 	v := e.V.GenExpression(c)
 	// TODO: floating point types
@@ -514,6 +514,10 @@ func (a ArrayType) GenZero(c *Compiler, loc Operand) {
 }
 func (f FuncType) GenZero(c *Compiler, loc Operand) {
 	panic("Attempted to zero a function type")
+}
+
+func (ty TypeNameType) GenZero(c *Compiler, loc Operand) {
+	ty.get().GenZero(c, loc)
 }
 
 func (s StructType) GenZero(c *Compiler, loc Operand) {

@@ -6,6 +6,13 @@ import (
 )
 
 func Compatible(a, b Type) bool {
+	if ty, ok := a.(TypeNameType); ok {
+		a = ty.get()
+	}
+	if ty, ok := b.(TypeNameType); ok {
+		b = ty.get()
+	}
+
 	if a.Equals(b) || b.Equals(a) {
 		return true
 	}
@@ -332,6 +339,46 @@ func (_ FuncType) IRTypeName(c *Compiler) string {
 }
 func (_ FuncType) IRBaseTypeName() byte {
 	return 0
+}
+
+// This type exists purely to lazily evaluate type names
+type TypeNameType struct {
+	Ty   ConcreteType
+	Path []string
+	c    *Compiler
+}
+
+func (ty TypeNameType) get() ConcreteType {
+	if ty.Ty == nil {
+		ty.Ty = ty.c.Type(ty.Path...)
+		ty.Path = nil
+		ty.c = nil
+	}
+	return ty.Ty
+}
+func (a TypeNameType) Equals(b Type) bool {
+	if ty, ok := b.(TypeNameType); ok {
+		b = ty.get()
+	}
+	return a.get().Equals(b)
+}
+func (ty TypeNameType) IsConcrete() bool {
+	return ty.get().IsConcrete()
+}
+func (ty TypeNameType) Concrete() ConcreteType {
+	return ty.get().Concrete()
+}
+func (ty TypeNameType) Format(indent int) string {
+	return ty.get().Format(indent)
+}
+func (ty TypeNameType) Metrics() TypeMetrics {
+	return ty.get().Metrics()
+}
+func (ty TypeNameType) IRTypeName(c *Compiler) string {
+	return ty.get().IRTypeName(c)
+}
+func (ty TypeNameType) IRBaseTypeName() byte {
+	return ty.get().IRBaseTypeName()
 }
 
 type NamedType struct {

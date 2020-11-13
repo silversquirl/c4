@@ -183,10 +183,10 @@ func (_ RuneExpr) TypeOf(c *Compiler) Type {
 }
 
 func (name NamedTypeExpr) Get(c *Compiler) ConcreteType {
-	return c.Type(string(name))
+	return TypeNameType{nil, []string{string(name)}, c}
 }
 func (ns NamespaceTypeExpr) Get(c *Compiler) ConcreteType {
-	return c.Type(ns...)
+	return TypeNameType{nil, []string(ns), c}
 }
 func (ptr PointerTypeExpr) Get(c *Compiler) ConcreteType {
 	if ptr.To == nil {
