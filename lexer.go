@@ -79,6 +79,8 @@ func parseString(tok Token) Token {
 	return tok
 }
 func parseInt(tok Token) Token {
+	i, _ := strconv.ParseInt(tok.S, 0, 64)
+	tok.S = strconv.FormatInt(i, 10)
 	return tok
 }
 func parseFloat(tok Token) Token {
