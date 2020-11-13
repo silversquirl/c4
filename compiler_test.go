@@ -294,6 +294,27 @@ func TestBoolean(t *testing.T) {
 	`)
 }
 
+func TestCast(t *testing.T) {
+	testMainCompile(t, `
+		var i I32
+		var u U64
+		i = cast(u, I32)
+		u = cast(i, U64)
+	`, `
+		%t1 =l alloc4 4
+		storew 0, %t1
+		%t2 =l alloc8 8
+		storel 0, %t2
+
+		%t3 =l loadl %t2
+		storew %t3, %t1
+
+		%t4 =w loadw %t1
+		%t5 =l extsw %t4
+		storel %t5, %t2
+	`)
+}
+
 func TestNestedArithmetic(t *testing.T) {
 	testMainCompile(t, `_ = (1 + 10*2) * 2`, `
 		%t1 =l mul 10, 2

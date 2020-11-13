@@ -204,6 +204,29 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 	}
 }
 
+func (e CastExpr) GenExpression(c *Compiler) Operand {
+	ty := e.TypeOf(c).(NumericType)
+	vty := e.V.TypeOf(c).(NumericType)
+
+	v := e.V.GenExpression(c)
+	// TODO: floating point types
+	if vty.Metrics().Size >= ty.Metrics().Size {
+		return v
+	}
+
+	var insn string
+	if vty.Signed() {
+		insn = "exts"
+	} else {
+		insn = "extu"
+	}
+	insn += vty.IRTypeName(c)
+
+	t := c.Temporary()
+	c.Insn(t, ty.IRBaseTypeName(), insn, v)
+	return t
+}
+
 func genPtrStore(ptr, val Operand, ty NumericType, c *Compiler) {
 	// TODO: make extensible
 	c.Insn(0, 0, "store"+ty.IRTypeName(c), val, ptr)

@@ -254,6 +254,15 @@ func init() {
 		TCaret: {PrecPrefix, prefix},
 		TMinus: {PrecPrefix, prefix},
 		TPlus:  {PrecPrefix, prefix},
+
+		TKcast: {PrecCall, func(prec int, p *parser, tok Token) Expression {
+			p.require(TLParen)
+			v := p.parseExpression(0)
+			p.require(TComma)
+			ty := p.parseType()
+			p.require(TRParen)
+			return CastExpr{v, ty}
+		}},
 	}
 }
 

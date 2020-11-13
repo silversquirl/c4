@@ -101,6 +101,11 @@ type CallExpr struct {
 	Args []Expression
 }
 
+type CastExpr struct {
+	V  Expression
+	Ty TypeExpr
+}
+
 type PrefixExpr struct {
 	Op PrefixOperator
 	V  Expression

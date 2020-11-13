@@ -133,6 +133,10 @@ func (e CallExpr) Format(indent int) string {
 	return e.Func.Format(indent) + "(" + strings.Join(args, ", ") + ")"
 }
 
+func (e CastExpr) Format(indent int) string {
+	return "cast(" + e.V.Format(0) + ", " + e.Ty.Format(0) + ")"
+}
+
 func (e VarExpr) Format(indent int) string {
 	return string(e)
 }

@@ -303,6 +303,7 @@ const (
 
 	// Keywords
 	TKeywordStart
+	TKcast     // 'cast'
 	TKelse     // 'else'
 	TKextern   // 'extern'
 	TKfn       // 'fn'

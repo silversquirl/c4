@@ -69,9 +69,11 @@ func (e CallExpr) typeOf(c *Compiler) (t FuncType, ptr bool) {
 	case FuncType:
 		return t, false
 	case PointerType:
-		return t.To.(FuncType), true
+		if fn, ok := t.To.(FuncType); ok {
+			return fn, true
+		}
 	}
-	panic("Invalid function type")
+	panic("Call of non-function type")
 }
 func (e CallExpr) TypeOf(c *Compiler) Type {
 	t, _ := e.typeOf(c)
@@ -84,6 +86,17 @@ func (e CallExpr) TypeOf(c *Compiler) Type {
 		typeCheck(errCtx, e.Args[i].TypeOf(c), par)
 	}
 	return t.Ret
+}
+
+func (e CastExpr) TypeOf(c *Compiler) Type {
+	if _, ok := e.V.TypeOf(c).Concrete().(NumericType); !ok {
+		panic("Cast of non-numeric type " + e.V.TypeOf(c).Format(0))
+	}
+	ty := e.Ty.Get(c)
+	if _, ok := ty.Concrete().(NumericType); !ok {
+		panic("Cast to non-numeric type " + ty.Format(0))
+	}
+	return ty
 }
 
 func (e VarExpr) TypeOf(c *Compiler) Type {
