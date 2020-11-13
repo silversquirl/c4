@@ -36,6 +36,15 @@ func (p *parser) parseToplevel() Toplevel {
 
 func init() {
 	toplevelParselets = map[TokenType]toplevelParselet{
+		TKns: func(p *parser, tok Token) Toplevel {
+			ns := NamespaceTL{Name: p.require(TIdent).S}
+			p.require(TLBrace)
+			for l := p.list(TSemi, TRBrace); l.next(); {
+				ns.Body = append(ns.Body, p.parseToplevel())
+			}
+			return ns
+		},
+
 		TKpub: func(p *parser, tok Token) Toplevel {
 			switch tl := p.parseToplevel().(type) {
 			case Function:

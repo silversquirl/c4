@@ -16,9 +16,10 @@ type Compiler struct {
 	temp Temporary
 	ret  bool // True if the last emitted instruction was `ret`
 
+	ns   []Namespace             // Namespace stack
 	typs map[string]ConcreteType // Type names
 	comp []CompositeLayout       // Composite types
-	vars map[string]Variable     // Variable names
+	vars map[string]Variable     // Local variable names
 	strs []IRString              // String constants
 	strM map[string]int          // Map from string to index of entry in strs
 }
@@ -65,8 +66,9 @@ func NewCompiler() *Compiler {
 		"Bool": TypeBool,
 	}
 	c.r = &CompileResult{}
-	c.vars = map[string]Variable{"_": {}}
-	c.strM = make(map[string]int)
+	c.ns = []Namespace{{"", map[string]Type{}}}
+	c.vars = map[string]Variable{}
+	c.strM = map[string]int{}
 	return c
 }
 
@@ -120,6 +122,19 @@ func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands 
 	c.ret = opcode == "ret"
 }
 
+func (c *Compiler) StartNamespace(name string) {
+	cur := c.ns[len(c.ns)-1]
+	ns := Namespace{cur.Name + name + ".", map[string]Type{}}
+	cur.Vars[name] = ns
+	c.ns = append(c.ns, ns)
+}
+func (c *Compiler) EndNamespace() {
+	c.ns = c.ns[:len(c.ns)-1]
+	if len(c.ns) == 0 {
+		panic("[compiler bug] End of global namespace")
+	}
+}
+
 func (c *Compiler) StartFunction(export bool, name string, params []IRParam, retType string) {
 	prefix := ""
 	if export {
@@ -150,6 +165,7 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 	if retType != "" {
 		retType += " "
 	}
+	name = c.ns[len(c.ns)-1].Name + name
 	c.Writef("%sfunction %s$%s(%s) {\n@start\n", prefix, retType, name, pbuild)
 
 	// Add args to locals
@@ -230,13 +246,12 @@ func (c *Compiler) CompositeType(layout CompositeLayout) string {
 	return ident
 }
 
-func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) Variable {
-	if _, ok := c.vars[name]; ok {
+func (c *Compiler) DeclareGlobal(name string, typ ConcreteType) {
+	cur := c.ns[len(c.ns)-1]
+	if _, ok := cur.Vars[name]; ok {
 		panic("Variable already exists")
 	}
-	v := Variable{Global(name), typ}
-	c.vars[name] = v
-	return v
+	cur.Vars[name] = typ
 }
 func (c *Compiler) allocLocal(loc Temporary, ty ConcreteType) {
 	m := ty.Metrics()
@@ -253,24 +268,33 @@ func (c *Compiler) allocLocal(loc Temporary, ty ConcreteType) {
 	}
 	c.Insn(loc, 'l', op, IRInt(m.Size))
 }
-func (c *Compiler) DeclareLocal(name string, ty ConcreteType) Variable {
+func (c *Compiler) DeclareLocal(name string, ty ConcreteType) {
 	if _, ok := c.vars[name]; ok {
 		panic("Variable already exists")
 	}
 	loc := c.Temporary()
-	v := Variable{loc, ty}
-	c.vars[name] = v
+	c.vars[name] = Variable{loc, ty}
 
 	c.allocLocal(loc, ty)
 	ty.GenZero(c, loc)
-	return v
+}
+func (c *Compiler) nsVar(i int, name string) (Variable, bool) {
+	if ty, ok := c.ns[i].Vars[name]; ok {
+		return Variable{Global(c.ns[i].Name + name), ty}, true
+	}
+	return Variable{}, false
 }
 func (c *Compiler) Variable(name string) Variable {
-	v, ok := c.vars[name]
-	if !ok {
-		panic("Undefined variable: " + name)
+	if v, ok := c.vars[name]; ok {
+		return v
 	}
-	return v
+	if v, ok := c.nsVar(len(c.ns)-1, name); ok {
+		return v
+	}
+	if v, ok := c.nsVar(0, name); ok {
+		return v
+	}
+	panic("Undefined variable: " + name)
 }
 
 func (c *Compiler) String(str string) Global {
@@ -437,5 +461,5 @@ func (c CallOperand) Operand() string {
 
 type Variable struct {
 	Loc Operand
-	Ty  ConcreteType
+	Ty  Type
 }

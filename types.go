@@ -54,6 +54,16 @@ type NumericType interface {
 	Signed() bool
 }
 
+type Namespace struct {
+	Name string
+	Vars map[string]Type
+}
+
+func (ns Namespace) IsConcrete() bool         { return false }
+func (a Namespace) Equals(other Type) bool    { panic("Namespace used as value") }
+func (ns Namespace) Concrete() ConcreteType   { panic("Namespace used as value") }
+func (ns Namespace) Format(indent int) string { panic("Namespace used as value") }
+
 // The type of integral numeric literals
 type IntLitType struct{}
 

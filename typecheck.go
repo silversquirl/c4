@@ -20,16 +20,20 @@ func typeCheck(errCtx string, a, b Type) {
 }
 
 func (e AccessExpr) TypeOf(c *Compiler) Type {
-	switch lty := e.L.TypeOf(c).Concrete().(type) {
-	default:
-		panic("Access of non-composite type " + lty.Format(0))
-	case CompositeType:
+	lty := e.L.TypeOf(c)
+	if ns, ok := lty.(Namespace); ok {
+		return ns.Vars[e.R]
+	}
+
+	if lty, ok := lty.Concrete().(CompositeType); ok {
 		f := lty.Field(e.R)
 		if f == nil {
 			panic("No such field: " + e.R)
 		}
 		return f
 	}
+
+	panic("Access of non-composite type " + lty.Format(0))
 }
 
 func (e AssignExpr) typeOf(c *Compiler) Type {

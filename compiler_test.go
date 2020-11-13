@@ -114,6 +114,27 @@ func TestVariadicFunction(t *testing.T) {
 	`)
 }
 
+func TestNamespace(t *testing.T) {
+	testCompile(t, `
+		ns foo {
+			fn bar() {}
+		}
+		fn bar() {
+			foo.bar()
+		}
+	`, `
+		function $foo.bar() {
+		@start
+			ret
+		}
+		function $bar() {
+		@start
+			call $foo.bar()
+			ret
+		}
+	`)
+}
+
 func TestReturn0(t *testing.T) {
 	testMainCompile(t, "", "")
 }

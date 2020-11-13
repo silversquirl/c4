@@ -68,19 +68,20 @@ func _() {
 	_ = x[TKfn-57]
 	_ = x[TKfor-58]
 	_ = x[TKif-59]
-	_ = x[TKpub-60]
-	_ = x[TKreturn-61]
-	_ = x[TKstruct-62]
-	_ = x[TKtype-63]
-	_ = x[TKunion-64]
-	_ = x[TKvar-65]
-	_ = x[TKvariadic-66]
-	_ = x[TKeywordEnd-67]
+	_ = x[TKns-60]
+	_ = x[TKpub-61]
+	_ = x[TKreturn-62]
+	_ = x[TKstruct-63]
+	_ = x[TKtype-64]
+	_ = x[TKunion-65]
+	_ = x[TKvar-66]
+	_ = x[TKvariadic-67]
+	_ = x[TKeywordEnd-68]
 }
 
-const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalcharacter literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>''.'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''pub''return''struct''type''union''var''variadic'TKeywordEnd"
+const _TokenType_name = "end of filecommentwhitespacenewline'\\'';'',''('')''['']''{''}'identifiertype namestring literalcharacter literalfloat literalinteger literal'+=''-=''*=''/=''%=''|=''^=''&=''<<=''>>=''&&=''||=''<<''>>''&&''||''==''!=''<=''>=''=''+''-''*''/''%''!''|''^''&''<''>''.'invalid tokenLexTokenMaxTKeywordStart'else''extern''fn''for''if''ns''pub''return''struct''type''union''var''variadic'TKeywordEnd"
 
-var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 112, 125, 140, 144, 148, 152, 156, 160, 164, 168, 172, 177, 182, 187, 192, 196, 200, 204, 208, 212, 216, 220, 224, 227, 230, 233, 236, 239, 242, 245, 248, 251, 254, 257, 260, 263, 276, 287, 300, 306, 314, 318, 323, 327, 332, 340, 348, 354, 361, 366, 376, 387}
+var _TokenType_index = [...]uint16{0, 11, 18, 28, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 72, 81, 95, 112, 125, 140, 144, 148, 152, 156, 160, 164, 168, 172, 177, 182, 187, 192, 196, 200, 204, 208, 212, 216, 220, 224, 227, 230, 233, 236, 239, 242, 245, 248, 251, 254, 257, 260, 263, 276, 287, 300, 306, 314, 318, 323, 327, 331, 336, 344, 352, 358, 365, 370, 380, 391}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

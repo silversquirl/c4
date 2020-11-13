@@ -304,6 +304,7 @@ const (
 	TKfn       // 'fn'
 	TKfor      // 'for'
 	TKif       // 'if'
+	TKns       // 'ns'
 	TKpub      // 'pub'
 	TKreturn   // 'return'
 	TKstruct   // 'struct'

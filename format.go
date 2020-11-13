@@ -19,6 +19,20 @@ func (prog Program) Format(indent int) string {
 	return b.String()
 }
 
+func (ns NamespaceTL) Format(indent int) string {
+	b := &strings.Builder{}
+	b.WriteString("ns ")
+	b.WriteString(ns.Name)
+	b.WriteString(" {")
+	for _, tl := range ns.Body {
+		b.WriteString(newLine(indent + 1))
+		b.WriteString(tl.Format(indent + 1))
+	}
+	b.WriteString(newLine(indent))
+	b.WriteString("}")
+	return b.String()
+}
+
 func (f Function) Format(indent int) string {
 	b := &strings.Builder{}
 	if f.Pub {

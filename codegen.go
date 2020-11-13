@@ -1,9 +1,17 @@
 package main
 
 func (p Program) GenProgram(c *Compiler) {
-	for _, f := range p {
-		f.GenToplevel(c)
+	for _, tl := range p {
+		tl.GenToplevel(c)
 	}
+}
+
+func (ns NamespaceTL) GenToplevel(c *Compiler) {
+	c.StartNamespace(ns.Name)
+	for _, tl := range ns.Body {
+		tl.GenToplevel(c)
+	}
+	c.EndNamespace()
 }
 
 func (f Function) GenToplevel(c *Compiler) {
@@ -22,12 +30,13 @@ func (f Function) GenToplevel(c *Compiler) {
 		ret = ty.Ret.IRTypeName(c)
 	}
 	c.StartFunction(f.Pub, f.Name, params, ret)
-	defer c.EndFunction()
 	c.DeclareGlobal(f.Name, ty)
 
 	for _, stmt := range f.Body {
 		stmt.GenStatement(c)
 	}
+
+	c.EndFunction()
 }
 
 func (d VarsDecl) GenStatement(c *Compiler) {
@@ -117,14 +126,19 @@ func (e ExprStmt) GenStatement(c *Compiler) {
 }
 
 func (e AccessExpr) GenPointer(c *Compiler) Operand {
-	lty := e.L.TypeOf(c).Concrete().(CompositeType)
-	l := e.L.GenPointer(c)
-	if off := lty.Offset(e.R); off > 0 {
-		t := c.Temporary()
-		c.Insn(t, 'l', "add", l, IRInt(off))
-		return t
+	lty := e.L.TypeOf(c)
+	if ns, ok := lty.(Namespace); ok {
+		return Global(ns.Name + e.R)
 	} else {
-		return l
+		lty := lty.Concrete().(CompositeType)
+		l := e.L.GenPointer(c)
+		if off := lty.Offset(e.R); off > 0 {
+			t := c.Temporary()
+			c.Insn(t, 'l', "add", l, IRInt(off))
+			return t
+		} else {
+			return l
+		}
 	}
 }
 func (e AccessExpr) GenExpression(c *Compiler) Operand {

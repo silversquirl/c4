@@ -7,6 +7,11 @@ type Toplevel interface {
 	GenToplevel(c *Compiler)
 }
 
+type NamespaceTL struct {
+	Name string
+	Body []Toplevel
+}
+
 type Function struct {
 	Pub   bool
 	Name  string
