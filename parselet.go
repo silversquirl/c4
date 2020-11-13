@@ -408,9 +408,6 @@ func init() {
 
 		TLSquare: func(p *parser, tok Token) TypeExpr {
 			to := p.parseType()
-			if to == nil {
-				p.errExpect("type")
-			}
 			p.require(TRSquare)
 			return PointerTypeExpr{to}
 		},

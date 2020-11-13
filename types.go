@@ -231,7 +231,8 @@ type PointerType struct {
 
 func (a PointerType) Equals(other Type) bool {
 	b, ok := other.(PointerType)
-	return ok && a.To.Equals(b.To)
+	// nil To means generic pointer, which is compatible with every pointer type
+	return ok && (a.To == nil || b.To == nil || a.To.Equals(b.To))
 }
 func (_ PointerType) Signed() bool {
 	return false
@@ -246,7 +247,11 @@ func (_ PointerType) Metrics() TypeMetrics {
 	return TypeMetrics{8, 8}
 }
 func (p PointerType) Format(indent int) string {
-	return "[" + p.To.Format(indent) + "]"
+	var t string
+	if p.To != nil {
+		t = p.To.Format(indent)
+	}
+	return "[" + t + "]"
 }
 func (_ PointerType) IRTypeName(c *Compiler) string {
 	return "l"

@@ -156,6 +156,9 @@ func (ns NamespaceTypeExpr) Get(c *Compiler) ConcreteType {
 	return c.Type(ns...)
 }
 func (ptr PointerTypeExpr) Get(c *Compiler) ConcreteType {
+	if ptr.To == nil {
+		return PointerType{}
+	}
 	return PointerType{ptr.To.Get(c)}
 }
 func (fun FuncTypeExpr) Get(c *Compiler) ConcreteType {

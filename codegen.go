@@ -288,8 +288,16 @@ func extend(c *Compiler, v Operand, ty NumericType) Operand {
 	return t
 }
 func ptrMul(c *Compiler, v Operand, ty PointerType) Operand {
+	if ty.To == nil {
+		return v
+	}
+	size := ty.To.Metrics().Size
+	if size == 1 {
+		return v
+	}
+
 	t := c.Temporary()
-	c.Insn(t, ty.IRBaseTypeName(), BinMul.Instruction(ty), IRInt(ty.To.Metrics().Size), v)
+	c.Insn(t, ty.IRBaseTypeName(), BinMul.Instruction(ty), IRInt(size), v)
 	return t
 }
 func (op BinaryOperator) genExpression(c *Compiler, l, r Operand, lty, rty Type, ty NumericType) Operand {

@@ -863,6 +863,8 @@ func TestPointerArithmetic(t *testing.T) {
 		p += 1
 		var i I32
 		p += i
+		var bp [I8]
+		bp += 1
 	`, `
 		%t1 =l alloc8 8
 		storel 0, %t1
@@ -881,6 +883,39 @@ func TestPointerArithmetic(t *testing.T) {
 		%t9 =l mul 4, %t8
 		%t10 =l add %t6, %t9
 		storel %t10, %t1
+
+		%t11 =l alloc8 8
+		storel 0, %t11
+
+		%t12 =l loadl %t11
+		%t13 =l add %t12, 1
+		storel %t13, %t11
+	`)
+}
+
+func TestGenericPointer(t *testing.T) {
+	testMainCompile(t, `
+		var p []
+		p += 1
+		var ip [I32]
+		p = ip
+		ip = p
+	`, `
+		%t1 =l alloc8 8
+		storel 0, %t1
+
+		%t2 =l loadl %t1
+		%t3 =l add %t2, 1
+		storel %t3, %t1
+
+		%t4 =l alloc8 8
+		storel 0, %t4
+
+		%t5 =l loadl %t4
+		storel %t5, %t1
+
+		%t6 =l loadl %t1
+		storel %t6, %t4
 	`)
 }
 
