@@ -117,23 +117,26 @@ func TestVariadicFunction(t *testing.T) {
 func TestNamespace(t *testing.T) {
 	testCompile(t, `
 		ns foo {
-			fn bar() {}
 			type Bar I8
+			fn bar(x Bar) {}
 		}
 		fn bar() {
 			var x foo.Bar
-			foo.bar()
+			foo.bar(x)
 		}
 	`, `
-		function $foo.bar() {
+		function $foo.bar(w %t1) {
 		@start
+			%t2 =l alloc4 1
+			storeb %t1, %t2
 			ret
 		}
 		function $bar() {
 		@start
 			%t1 =l alloc4 1
 			storeb 0, %t1
-			call $foo.bar()
+			%t2 =w loadsb %t1
+			call $foo.bar(w %t2)
 			ret
 		}
 	`)

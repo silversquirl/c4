@@ -53,10 +53,10 @@ func (d VarsDecl) GenToplevel(c *Compiler) {
 }
 
 func (t TypeDef) GenToplevel(c *Compiler) {
-	c.DefineType(t.Name, t.Ty.Get(c))
+	*c.AliasType(t.Name) = NamedType{t.Ty.Get(c), c.NS().Name + t.Name}
 }
 func (t TypeAlias) GenToplevel(c *Compiler) {
-	c.AliasType(t.Name, t.Ty.Get(c))
+	*c.AliasType(t.Name) = t.Ty.Get(c)
 }
 
 func (i IfStmt) GenStatement(c *Compiler) {
@@ -532,10 +532,6 @@ func (a ArrayType) GenZero(c *Compiler, loc Operand) {
 }
 func (f FuncType) GenZero(c *Compiler, loc Operand) {
 	panic("Attempted to zero a function type")
-}
-
-func (ty TypeNameType) GenZero(c *Compiler, loc Operand) {
-	ty.get().GenZero(c, loc)
 }
 
 func (s StructType) GenZero(c *Compiler, loc Operand) {

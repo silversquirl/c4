@@ -53,23 +53,30 @@ func NewCompiler() *Compiler {
 	c.r = &CompileResult{}
 	c.ns = []Namespace{{
 		"", map[string]Type{},
-		map[string]ConcreteType{
-			"I64": TypeI64,
-			"I32": TypeI32,
-			"I16": TypeI16,
-			"I8":  TypeI8,
-
-			"U64": TypeU64,
-			"U32": TypeU32,
-			"U16": TypeU16,
-			"U8":  TypeU8,
-
-			"F64": TypeF64,
-			"F32": TypeF32,
-
-			"Bool": TypeBool,
-		},
+		map[string]*ConcreteType{},
 	}}
+
+	baseTypes := map[string]ConcreteType{
+		"I64": TypeI64,
+		"I32": TypeI32,
+		"I16": TypeI16,
+		"I8":  TypeI8,
+
+		"U64": TypeU64,
+		"U32": TypeU32,
+		"U16": TypeU16,
+		"U8":  TypeU8,
+
+		"F64": TypeF64,
+		"F32": TypeF32,
+
+		"Bool": TypeBool,
+	}
+	for name, ty := range baseTypes {
+		ty2 := ty // Copy so we can get a pointer to it
+		c.ns[0].Typs[name] = &ty2
+	}
+
 	c.vars = map[string]Variable{}
 	c.strM = map[string]int{}
 	return c
@@ -126,8 +133,8 @@ func (c *Compiler) Insn(retVar Temporary, retType byte, opcode string, operands 
 }
 
 func (c *Compiler) StartNamespace(name string) {
-	cur := c.ns[len(c.ns)-1]
-	ns := Namespace{cur.Name + name + ".", map[string]Type{}, map[string]ConcreteType{}}
+	cur := c.NS()
+	ns := Namespace{cur.Name + name + ".", map[string]Type{}, map[string]*ConcreteType{}}
 	cur.Vars[name] = ns
 	c.ns = append(c.ns, ns)
 }
@@ -136,6 +143,9 @@ func (c *Compiler) EndNamespace() {
 	if len(c.ns) == 0 {
 		panic("[compiler bug] End of global namespace")
 	}
+}
+func (c *Compiler) NS() Namespace {
+	return c.ns[len(c.ns)-1]
 }
 
 func (c *Compiler) StartFunction(export bool, name string, params []IRParam, retType string) {
@@ -168,7 +178,7 @@ func (c *Compiler) StartFunction(export bool, name string, params []IRParam, ret
 	if retType != "" {
 		retType += " "
 	}
-	name = c.ns[len(c.ns)-1].Name + name
+	name = c.NS().Name + name
 	c.Writef("%sfunction %s$%s(%s) {\n@start\n", prefix, retType, name, pbuild)
 
 	// Add args to locals
@@ -226,25 +236,21 @@ func (c *Compiler) Temporary() Temporary {
 	return c.temp
 }
 
-func (c *Compiler) AliasType(name string, ty ConcreteType) {
-	cur := c.ns[len(c.ns)-1]
+func (c *Compiler) AliasType(name string) *ConcreteType {
+	cur := c.NS()
 	if _, ok := cur.Typs[name]; ok {
 		panic("Type already exists")
 	}
+	ty := new(ConcreteType)
 	cur.Typs[name] = ty
-}
-func (c *Compiler) DefineType(name string, typ ConcreteType) NamedType {
-	cur := c.ns[len(c.ns)-1]
-	ty := NamedType{typ, cur.Name + name}
-	c.AliasType(name, ty)
 	return ty
 }
 func (c *Compiler) Type(path ...string) ConcreteType {
 	name, path := path[len(path)-1], path[:len(path)-1]
 
 	if len(path) == 0 {
-		if ty, ok := c.ns[len(c.ns)-1].Typs[name]; ok {
-			return ty
+		if ty, ok := c.NS().Typs[name]; ok {
+			return *ty
 		}
 	}
 
@@ -256,7 +262,7 @@ func (c *Compiler) Type(path ...string) ConcreteType {
 		}
 	}
 	if ty, ok := ns.Typs[name]; ok {
-		return ty
+		return *ty
 	}
 
 	panic("Unknown type: " + name)
@@ -283,7 +289,7 @@ func (c *Compiler) CompositeType(layout CompositeLayout) string {
 }
 
 func (c *Compiler) DeclareGlobal(extern bool, name string, ty ConcreteType) {
-	cur := c.ns[len(c.ns)-1]
+	cur := c.NS()
 	if _, ok := cur.Vars[name]; ok {
 		panic("Variable already exists")
 	}
