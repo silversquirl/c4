@@ -457,6 +457,35 @@ func TestTypeAlias(t *testing.T) {
 	`)
 }
 
+func TestFunctionPointer(t *testing.T) {
+	testCompile(t, `
+		fn foo() {
+		}
+		fn bar() {
+			var f fn()
+			f = &foo
+			f()
+		}
+	`, `
+		function $foo() {
+		@start
+			ret
+		}
+		function $bar() {
+		@start
+			%t1 =l alloc8 8
+			storel 0, %t1
+
+			storel $foo, %t1
+
+			%t2 =l loadl %t1
+			call %t2()
+
+			ret
+		}
+	`)
+}
+
 func TestStruct(t *testing.T) {
 	testCompile(t, `
 		type Foo struct { a, b I32; c I64 }

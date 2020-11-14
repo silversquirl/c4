@@ -332,7 +332,11 @@ func (f FuncType) Format(indent int) string {
 	for i, param := range f.Param {
 		params[i] = param.Format(indent)
 	}
-	return "func(" + strings.Join(params, ", ") + ") " + f.Ret.Format(indent)
+	ret := ""
+	if f.Ret != nil {
+		ret = " " + f.Ret.Format(indent)
+	}
+	return "fn(" + strings.Join(params, ", ") + ")" + ret
 }
 func (_ FuncType) IRTypeName(c *Compiler) string {
 	return ""
