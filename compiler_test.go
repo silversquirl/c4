@@ -108,7 +108,7 @@ func TestVariadicFunction(t *testing.T) {
 	`, `
 		function $bar() {
 		@start
-			call $foo(l 1, l 2, ...)
+			call $foo(w 1, l 2, ...)
 			ret
 		}
 	`)
@@ -717,7 +717,7 @@ func TestSmallTypes(t *testing.T) {
 	`)
 }
 
-func TestSmallReturnType(t *testing.T) {
+func TestSmallTypeFunction(t *testing.T) {
 	testCompile(t, `
 		fn bool(b Bool) Bool {
 			return b
@@ -727,6 +727,14 @@ func TestSmallReturnType(t *testing.T) {
 		}
 		fn i16(i I16) I16 {
 			return i
+		}
+		fn f() {
+			var b Bool
+			_ = bool(b)
+			var i I8
+			_ = i8(i)
+			var i2 I16
+			_ = i16(i2)
 		}
 	`, `
 		function w $bool(w %t1) {
@@ -749,6 +757,44 @@ func TestSmallReturnType(t *testing.T) {
 			storeh %t1, %t2
 			%t3 =w loadsh %t2
 			ret %t3
+		}
+		function $f() {
+		@start
+			%t1 =l alloc4 1
+			storeb 0, %t1
+			%t2 =w loadub %t1
+			%t3 =w call $bool(w %t2)
+
+			%t4 =l alloc4 1
+			storeb 0, %t4
+			%t5 =w loadsb %t4
+			%t6 =w call $i8(w %t5)
+
+			%t7 =l alloc4 2
+			storeh 0, %t7
+			%t8 =w loadsh %t7
+			%t9 =w call $i16(w %t8)
+
+			ret
+		}
+	`)
+}
+
+func TestLiteralArg(t *testing.T) {
+	testCompile(t, `
+		fn f(i I32) {}
+		fn g() { f(1) }
+	`, `
+		function $f(w %t1) {
+		@start
+			%t2 =l alloc4 4
+			storew %t1, %t2
+			ret
+		}
+		function $g() {
+		@start
+			call $f(w 1)
+			ret
 		}
 	`)
 }

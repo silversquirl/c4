@@ -501,7 +501,11 @@ func (c CallOperand) Operand() string {
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		b.WriteString(arg.Ty)
+		if arg.Ty == "h" || arg.Ty == "b" {
+			b.WriteString("w")
+		} else {
+			b.WriteString(arg.Ty)
+		}
 		b.WriteRune(' ')
 		b.WriteString(arg.Op.Operand())
 	}

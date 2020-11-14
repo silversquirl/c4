@@ -206,8 +206,13 @@ func (e CallExpr) GenExpression(c *Compiler) Operand {
 
 	call := CallOperand{t.Var, f, make([]TypedOperand, len(e.Args))}
 	for i, arg := range e.Args {
-		// TODO: type-check arguments
-		call.Args[i].Ty = arg.TypeOf(c).Concrete().IRTypeName(c)
+		var ty Type
+		if i < len(t.Param) {
+			ty = t.Param[i]
+		} else {
+			ty = arg.TypeOf(c)
+		}
+		call.Args[i].Ty = ty.Concrete().IRTypeName(c)
 		call.Args[i].Op = arg.GenExpression(c)
 	}
 
