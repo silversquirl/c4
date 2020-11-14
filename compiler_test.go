@@ -1164,6 +1164,44 @@ func TestGenericPointer(t *testing.T) {
 			_ = [p]
 		}
 	`)
+
+	testCompile(t, `
+		type I8P [I8]
+		type GP []
+		fn f() {
+			var g []
+			var i8p I8P
+			g = i8p
+			i8p = g
+
+			var gp GP
+			g = gp
+			gp = g
+		}
+	`, `
+		function $f() {
+		@start
+			%t1 =l alloc8 8
+			storel 0, %t1
+			%t2 =l alloc8 8
+			storel 0, %t2
+
+			%t3 =l loadl %t2
+			storel %t3, %t1
+			%t4 =l loadl %t1
+			storel %t4, %t2
+
+			%t5 =l alloc8 8
+			storel 0, %t5
+
+			%t6 =l loadl %t5
+			storel %t6, %t1
+			%t7 =l loadl %t1
+			storel %t7, %t5
+
+			ret
+		}
+	`)
 }
 
 func TestArrayType(t *testing.T) {

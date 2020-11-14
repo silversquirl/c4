@@ -233,6 +233,11 @@ type PointerType struct {
 }
 
 func (a PointerType) Equals(other Type) bool {
+	if b, ok := other.(NamedType); ok {
+		if b, ok := b.ConcreteType.(PointerType); ok {
+			return a.To == nil || b.To == nil
+		}
+	}
 	b, ok := other.(PointerType)
 	// nil To means generic pointer, which is compatible with every pointer type
 	return ok && (a.To == nil || b.To == nil || a.To.Equals(b.To))
@@ -344,6 +349,9 @@ type NamedType struct {
 }
 
 func (a NamedType) Equals(other Type) bool {
+	if ap, ok := a.ConcreteType.(PointerType); ok {
+		return ap.Equals(other)
+	}
 	b, ok := other.(NamedType)
 	return ok && a.Name == b.Name
 }
